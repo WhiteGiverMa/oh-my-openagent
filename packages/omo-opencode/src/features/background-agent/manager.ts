@@ -2727,12 +2727,12 @@ The task was re-queued on a fallback model after a retryable failure.
         })
 
         const isTaskFailure = task.status === "error" || task.status === "cancelled" || task.status === "interrupt"
-        const shouldReply = allComplete || isTaskFailure
+        const shouldReply = isTaskFailure
 
-        // Completion-only notifications (not all-complete, not failure):
+        // All-complete and completion-only notifications:
         // force-enqueue immediately as noReply+enqueue instead of cycling
-        // through the full 120s deferred-flush loop. Failure and all-complete
-        // notifications still use the safety path — they need a reply-producing
+        // through the full 120s deferred-flush loop. Only failure notifications
+        // still use the safety path — they need a reply-producing
         // prompt that requires the parent session to be idle.
         if (!shouldReply) {
           this.parentWakeNotifier.forceEnqueueCompletion(
