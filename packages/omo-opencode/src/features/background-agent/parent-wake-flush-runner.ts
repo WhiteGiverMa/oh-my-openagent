@@ -87,19 +87,10 @@ export class ParentWakeFlushRunner {
       if (this.deferReplyWakeWhileUnsafe(sessionID, latestWake)) {
         return
       }
-      await this.sendParentWakePrompt(sessionID, latestWake, {
-        emptyAssistantTurnRetry: false,
-        toolWaitDecision: { defer: false, skipPromptGateToolStateCheck: true },
-        forceNoReply: true,
-        retainPendingWake: latestWake.shouldReply,
-      })
-      this.ensureRetainedReplyReflush(sessionID, latestWake)
-      log("[background-agent] Recorded admit-only parent wake because parent session activity is still fresh:", {
+      this.schedulePendingParentWakeFlush(sessionID)
+      log("[background-agent] Deferred parent wake (no admit-only) because parent session activity is still fresh:", {
         sessionID,
       })
-      if (latestWake.shouldReply) {
-        this.schedulePendingParentWakeFlush(sessionID)
-      }
       return
     }
 
@@ -109,13 +100,10 @@ export class ParentWakeFlushRunner {
       if (this.deferReplyWakeWhileUnsafe(sessionID, latestWake)) {
         return
       }
-      await this.sendParentWakePrompt(sessionID, latestWake, {
-        emptyAssistantTurnRetry,
-        toolWaitDecision: { ...toolWaitDecision, skipPromptGateToolStateCheck: true },
-        forceNoReply: true,
-        retainPendingWake: latestWake.shouldReply,
+      this.schedulePendingParentWakeFlush(sessionID)
+      log("[background-agent] Deferred parent wake (no admit-only) because tool wait deferred:", {
+        sessionID,
       })
-      this.ensureRetainedReplyReflush(sessionID, latestWake)
       return
     }
 
@@ -129,14 +117,8 @@ export class ParentWakeFlushRunner {
       if (this.deferReplyWakeWhileUnsafe(sessionID, latestWake)) {
         return
       }
-      await this.sendParentWakePrompt(sessionID, latestWake, {
-        emptyAssistantTurnRetry,
-        toolWaitDecision: { defer: false, skipPromptGateToolStateCheck: true },
-        forceNoReply: true,
-        retainPendingWake: latestWake.shouldReply,
-      })
-      this.ensureRetainedReplyReflush(sessionID, latestWake)
-      log("[background-agent] Recorded admit-only parent wake because user message just arrived:", {
+      this.schedulePendingParentWakeFlush(sessionID)
+      log("[background-agent] Deferred parent wake (no admit-only) because user message just arrived:", {
         sessionID,
       })
       return
@@ -189,6 +171,12 @@ export class ParentWakeFlushRunner {
   // duplicate notification and fork a concurrent assistant chain.
   private async dropAdmittedWakeConsumedByParent(sessionID: string, latestWake: PendingParentWake): Promise<boolean> {
     if (latestWake.noReplyAdmittedAt === undefined) {
+      return false
+    }
+    // Don't drop reply-required wakes — the parent's assistant output during an
+    // active session is part of ongoing work, not a response to the notification.
+    // The wake must survive until the parent becomes idle and can reply.
+    if (latestWake.shouldReply) {
       return false
     }
     if (!(await this.deps.sessionInspector.hasAssistantOutputAfterAdmittedWake(sessionID, latestWake))) {
