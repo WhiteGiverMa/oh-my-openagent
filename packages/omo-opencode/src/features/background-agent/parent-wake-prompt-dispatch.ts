@@ -18,6 +18,7 @@ type ParentWakePromptDispatchInput = {
   readonly sessionID: string
   readonly latestWake: PendingParentWake
   readonly forceNoReply?: boolean
+  readonly skipStatusCheck?: boolean
   readonly retainPendingWake?: boolean
   readonly emptyAssistantTurnRetry: boolean
   readonly toolWaitDecision: ToolWaitDeferralDecision
@@ -50,7 +51,7 @@ export async function sendParentWakePrompt(input: ParentWakePromptDispatchInput)
         : {}),
       settleMs: 0,
       queueBehavior: input.queueBehavior ?? "defer",
-      checkStatus: input.forceNoReply !== true,
+      checkStatus: input.skipStatusCheck !== true && input.forceNoReply !== true,
       checkToolState: input.forceNoReply !== true && !input.toolWaitDecision.skipPromptGateToolStateCheck,
       ...(input.onForceQueueResolved !== undefined
         ? { onExpiredOrFailed: () => input.onForceQueueResolved?.() }

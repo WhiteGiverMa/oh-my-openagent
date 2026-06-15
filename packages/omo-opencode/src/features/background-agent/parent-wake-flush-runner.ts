@@ -33,6 +33,7 @@ export class ParentWakeFlushRunner {
     await this.sendParentWakePrompt(sessionID, wake, {
       emptyAssistantTurnRetry: false,
       toolWaitDecision: { defer: false, skipPromptGateToolStateCheck: true },
+      skipStatusCheck: true,
       forceNoReply: false,
       retainPendingWake: false,
       queueBehavior: "enqueue",
@@ -214,6 +215,7 @@ export class ParentWakeFlushRunner {
       readonly emptyAssistantTurnRetry: boolean
       readonly toolWaitDecision: ToolWaitDeferralDecision
       readonly forceNoReply?: boolean
+      readonly skipStatusCheck?: boolean
       readonly retainPendingWake?: boolean
       readonly queueBehavior?: InternalPromptQueueBehavior
       readonly markForceQueued?: (queuedAt: number) => void
@@ -234,6 +236,7 @@ export class ParentWakeFlushRunner {
       sessionID,
       latestWake,
       ...(options.forceNoReply !== undefined ? { forceNoReply: options.forceNoReply } : {}),
+      ...(options.skipStatusCheck !== undefined ? { skipStatusCheck: options.skipStatusCheck } : {}),
       ...(options.retainPendingWake !== undefined ? { retainPendingWake: options.retainPendingWake } : {}),
       ...(options.queueBehavior !== undefined ? { queueBehavior: options.queueBehavior } : {}),
       ...(checkParentSessionExistence
