@@ -129,6 +129,22 @@ export class ParentWakeNotifier {
     void this.flushRunner.flushPendingParentWake(sessionID)
   }
 
+  /**
+   * Enqueue a completion notification directly to the prompt gate.
+   * Like a user sending a new message — the notification is queued
+   * and automatically injected at the next turn boundary. The parent
+   * agent processes it naturally and responds.
+   */
+  enqueueToGate(
+    sessionID: string,
+    notification: string,
+    promptContext: ParentWakePromptContext,
+    shouldReply: boolean,
+  ): void {
+    this.pendingQueue.queueWake(sessionID, notification, promptContext, shouldReply)
+    void this.flushRunner.enqueueWakeToGate(sessionID)
+  }
+
   clearDispatchedParentWake(sessionID: string): void {
     this.dispatchedTracker.clearWake(sessionID)
   }

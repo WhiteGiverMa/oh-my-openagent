@@ -20,6 +20,25 @@ type ParentWakeFlushRunnerDeps = {
 export class ParentWakeFlushRunner {
   constructor(private readonly deps: ParentWakeFlushRunnerDeps) {}
 
+  /**
+   * Queue a wake directly to the OpenCode prompt gate without going through
+   * the flush-runner defer/active-session checks. The notification is enqueued
+   * at the gate like a user message and injected at the next turn boundary.
+   * Unlike forceEnqueueCompletion, this preserves shouldReply so the parent
+   * agent responds naturally.
+   */
+  async enqueueWakeToGate(sessionID: string): Promise<void> {
+    const wake = this.deps.pendingQueue.getWake(sessionID)
+    if (!wake) return
+    await this.sendParentWakePrompt(sessionID, wake, {
+      emptyAssistantTurnRetry: false,
+      toolWaitDecision: { defer: false, skipPromptGateToolStateCheck: true },
+      forceNoReply: false,
+      retainPendingWake: false,
+      queueBehavior: "enqueue",
+    })
+  }
+
   // Monotonic token bound to each force-queue attempt so stale
   // gate callbacks (onDispatched / onExpiredOrFailed) only mutate the wake they
   // actually belong to.
