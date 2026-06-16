@@ -142,6 +142,13 @@ export class ParentWakeNotifier {
     shouldReply: boolean,
   ): void {
     this.pendingQueue.queueWake(sessionID, notification, promptContext, shouldReply)
+    // Clear deferred state from forceEnqueueCompletion path so the old
+    // flush runner doesn't fire after we've already enqueued to the gate.
+    // Without this, multi-subagent all-complete can produce duplicate
+    // notifications: enqueueToGate (reply) + forceDispatchAfterMaxDeferral
+    // (noReply) + retained shouldReply re-dispatch (reply).
+    this.clearPendingParentWakeTimer(sessionID)
+    this.clearDispatchedParentWake(sessionID)
     void this.flushRunner.enqueueWakeToGate(sessionID)
   }
 
