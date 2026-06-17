@@ -30,6 +30,7 @@ export class ParentWakeFlushRunner {
   async enqueueWakeToGate(sessionID: string): Promise<void> {
     const wake = this.deps.pendingQueue.getWake(sessionID)
     if (!wake) return
+    const forceQueueToken = ++this.forceQueueTokenSeq
     await this.sendParentWakePrompt(sessionID, wake, {
       emptyAssistantTurnRetry: false,
       toolWaitDecision: { defer: false, skipPromptGateToolStateCheck: true },
@@ -37,6 +38,10 @@ export class ParentWakeFlushRunner {
       forceNoReply: false,
       retainPendingWake: false,
       queueBehavior: "enqueue",
+      markForceQueued: (queuedAt) => this.markForceQueued(sessionID, queuedAt, forceQueueToken),
+      onForceQueueResolved: () => this.handleForceQueueResolved(sessionID, forceQueueToken),
+      forceQueueTtlMs: this.deps.maxDeferMs,
+      onForceDispatched: () => this.handleForceDispatched(sessionID, forceQueueToken),
     })
   }
 
