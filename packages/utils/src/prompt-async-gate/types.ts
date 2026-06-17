@@ -39,6 +39,7 @@ type InternalPromptDispatchCommonArgs<TInput> = {
   readonly source: string
   readonly dedupeKey?: string
   readonly queueBehavior?: InternalPromptQueueBehavior
+  readonly skipStatusCheck?: boolean
   readonly queue?: boolean
   readonly queueRetryMs?: number
   readonly settleMs?: number
