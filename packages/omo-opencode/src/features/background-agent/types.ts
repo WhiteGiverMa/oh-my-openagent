@@ -99,6 +99,12 @@ export interface BackgroundTask {
   stablePolls?: number
   /** Number of consecutive polls where session was missing from status map */
   consecutiveMissedPolls?: number
+  /** Timestamp when lastMsgCount last changed; drives the 10s message-stability completion fallback */
+  lastMessageCountChangedAt?: Date
+  /** Number of transient session.error events seen while the session was still alive, within the rolling window */
+  sessionErrorCount?: number
+  /** Timestamp of the most recent transient session.error event used to bound the rolling window */
+  lastSessionErrorAt?: Date
 }
 
 export interface BackgroundTaskSnapshot {
