@@ -1,6 +1,7 @@
 import { log } from "../../shared"
 import type { PendingParentWake } from "./parent-wake-dedupe"
 import type { ParentWakeDispatchedTracker } from "./parent-wake-dispatched-tracker"
+import type { ParentWakePendingQueue } from "./parent-wake-pending-queue"
 import type { ParentWakeSessionInspector } from "./parent-wake-session-inspector"
 
 const MAX_NO_ASSISTANT_OUTPUT_RETRIES = 1
@@ -12,6 +13,8 @@ type ParentWakeWindowRecoveryInput = {
   readonly sessionInspector: ParentWakeSessionInspector
   readonly requeueWake: (wake: PendingParentWake) => void
   readonly scheduleFlush: () => void
+  readonly pendingQueue: ParentWakePendingQueue
+  readonly maxWindowRefreshes: number
 }
 
 export async function handleDispatchedParentWakeWindowElapsed(
@@ -36,6 +39,20 @@ export async function handleDispatchedParentWakeWindowElapsed(
     log("[background-agent] Stopped retrying parent wake after repeated no-output dispatch:", {
       sessionID: input.sessionID,
       retryCount,
+    })
+    return
+  }
+
+  // Hotfix: if the wake is already retained in the pending queue (e.g. a
+  // shouldReply failure wake), only clear the dispatched tracker. Requeuing
+  // + scheduleFlush would cause repeated notifications every ~15s because
+  // isRedundantParentWake can't find the dispatched wake we just cleared.
+  // The retained wake is a liveness insurance — session.idle →
+  // flushPendingParentWake handles it naturally.
+  if (input.pendingQueue.hasWake(input.sessionID)) {
+    input.dispatchedTracker.clearWake(input.sessionID)
+    log("[background-agent] Cleared dispatched tracker for retained pending wake:", {
+      sessionID: input.sessionID,
     })
     return
   }

@@ -12934,7 +12934,8 @@ function queuedResult(entry, position, queuedBy = entry.source) {
   return {
     status: "queued",
     queuedBy,
-    position
+    position,
+    queuedEntryCreated: true
   };
 }
 function clearPromptQueueTimer(sessionID) {
