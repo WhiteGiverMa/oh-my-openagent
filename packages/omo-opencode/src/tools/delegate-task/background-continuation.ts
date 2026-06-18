@@ -65,6 +65,7 @@ Description: ${task.description}
 Agent: ${task.agent}
 Status: ${task.status}
 
+Your message was dispatched asynchronously to the background task; delivery is not yet confirmed. If it cannot be delivered, a <system-reminder> notification will follow and you can retry with task(task_id="${backgroundTaskId}").
 Agent continues with full previous context preserved.
 Do NOT call background_output now. Wait for <system-reminder> notification first. The system will deliver the result when the task completes; you do not need to poll for it.
 

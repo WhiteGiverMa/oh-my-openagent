@@ -43,6 +43,7 @@ function queuedResult(entry: QueuedInternalPrompt, position: number, queuedBy = 
     status: "queued",
     queuedBy,
     position,
+    queuedEntryCreated: true as const,
   }
 }
 
