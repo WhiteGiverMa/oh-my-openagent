@@ -396,7 +396,13 @@ export class ParentWakeFlushRunner {
         delete stillPending.firstDeferredAt
         stillPending.deferCount = 0
       }
-      this.schedulePendingParentWakeFlush(sessionID)
+      // Only re-schedule flush for non-shouldReply wakes. A retained
+      // shouldReply wake that was just force-dispatched will be handled
+      // by session.idle → flushPendingParentWake. Re-scheduling here
+      // causes an infinite defer → force → defer loop.
+      if (!stillPending.shouldReply) {
+        this.schedulePendingParentWakeFlush(sessionID)
+      }
     }
   }
 
@@ -464,8 +470,19 @@ export class ParentWakeFlushRunner {
     }
     // BUG B3: guard against re-flushing when the wake has been deleted
     // by a completion-only force-enqueue (retainPendingWake=false).
+    //
+    // Force-dispatch fix: if the wake is a retained shouldReply wake that
+    // just got noReply-admitted, do NOT schedule another flush. The wake
+    // is now in the parent session history — session.idle will naturally
+    // trigger flushPendingParentWake when the parent finishes its turn.
+    // Scheduling another flush here causes an infinite defer → force →
+    // defer loop (120s cycle) because hasRecentParentSessionActivity
+    // always returns true while the parent is processing the wake.
     if (this.deps.pendingQueue.hasWake(sessionID)) {
-      this.schedulePendingParentWakeFlush(sessionID)
+      const currentWake = this.deps.pendingQueue.getWake(sessionID)
+      if (currentWake && !currentWake.shouldReply) {
+        this.schedulePendingParentWakeFlush(sessionID)
+      }
     }
   }
 }
