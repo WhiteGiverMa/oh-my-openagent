@@ -144,4 +144,62 @@ describe("no-hephaestus-non-gpt hook", () => {
     expect(showToast).toHaveBeenCalledTimes(1)
     expect(output.message.agent).toBe("sisyphus")
   })
+
+  test("shows friendly deepseek toast and does not switch agent", async () => {
+    // given - hephaestus with deepseek model (no allow_non_gpt_model needed)
+    const showToast = spyOn({ fn: async (_input: unknown) => ({}) }, "fn")
+    const hook = createNoHephaestusNonGptHook(unsafeTestValue({
+      client: { tui: { showToast } },
+    }))
+
+    const output = createOutput()
+
+    // when - chat.message runs with deepseek model
+    await hook["chat.message"]?.({
+      sessionID: "ses_deepseek",
+      agent: HEPHAESTUS_DISPLAY,
+      model: { providerID: "deepseek", modelID: "deepseek-v4-pro" },
+    }, output)
+
+    // then - friendly toast is shown, agent is NOT switched to sisyphus
+    expect(showToast).toHaveBeenCalledTimes(1)
+    expect(output.message.agent).toBeUndefined()
+    expect(showToast.mock.calls[0]?.[0]).toMatchObject({
+      body: {
+        title: "DeepSeek × Hephaestus",
+        message: expect.stringContaining("鲸鱼娘"),
+        variant: "error",
+      },
+    })
+  })
+
+  test("shows friendly deepseek toast with warning variant when allow_non_gpt_model is enabled", async () => {
+    // given - hephaestus with deepseek model and opt-out enabled
+    const showToast = spyOn({ fn: async (_input: unknown) => ({}) }, "fn")
+    const hook = createNoHephaestusNonGptHook(unsafeTestValue({
+      client: { tui: { showToast } },
+    }), {
+      allowNonGptModel: true,
+    })
+
+    const output = createOutput()
+
+    // when - chat.message runs with deepseek model
+    await hook["chat.message"]?.({
+      sessionID: "ses_deepseek_opt",
+      agent: HEPHAESTUS_DISPLAY,
+      model: { providerID: "deepseek", modelID: "deepseek-v4-pro" },
+    }, output)
+
+    // then - friendly toast with warning variant, agent not switched
+    expect(showToast).toHaveBeenCalledTimes(1)
+    expect(output.message.agent).toBeUndefined()
+    expect(showToast.mock.calls[0]?.[0]).toMatchObject({
+      body: {
+        title: "DeepSeek × Hephaestus",
+        message: expect.stringContaining("鲸鱼娘"),
+        variant: "warning",
+      },
+    })
+  })
 })
