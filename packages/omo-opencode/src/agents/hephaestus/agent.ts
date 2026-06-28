@@ -51,8 +51,11 @@ function assertHephaestusSupportedModel(model: string | undefined): void {
 
 export function getHephaestusPromptSource(
   model?: string,
+  allowUnsupportedModel?: boolean,
 ): HephaestusPromptSource {
-  assertHephaestusSupportedModel(model);
+  if (!allowUnsupportedModel) {
+    assertHephaestusSupportedModel(model);
+  }
   if (model && isGpt5_5Model(model)) {
     return "gpt-5-5";
   }
@@ -69,6 +72,7 @@ export interface HephaestusContext {
   availableSkills?: AvailableSkill[];
   availableCategories?: AvailableCategory[];
   useTaskSystem?: boolean;
+  allowUnsupportedModel?: boolean;
 }
 
 export function getHephaestusPrompt(
@@ -86,7 +90,7 @@ function buildDynamicHephaestusPrompt(ctx?: HephaestusContext): string {
   const useTaskSystem = ctx?.useTaskSystem ?? false;
   const model = ctx?.model;
 
-  const source = getHephaestusPromptSource(model);
+  const source = getHephaestusPromptSource(model, ctx?.allowUnsupportedModel);
 
   let basePrompt: string;
   switch (source) {
@@ -135,6 +139,7 @@ export function createHephaestusAgent(
   availableSkills?: AvailableSkill[],
   availableCategories?: AvailableCategory[],
   useTaskSystem = false,
+  allowUnsupportedModel?: boolean,
 ): AgentConfig {
   const tools = availableToolNames ? categorizeTools(availableToolNames) : [];
 
@@ -145,6 +150,7 @@ export function createHephaestusAgent(
     availableSkills,
     availableCategories,
     useTaskSystem,
+    allowUnsupportedModel,
   });
 
   return {

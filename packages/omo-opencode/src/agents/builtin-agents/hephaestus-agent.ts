@@ -42,6 +42,7 @@ export function maybeCreateHephaestusConfig(input: {
   if (disabledAgents.includes("hephaestus")) return undefined
 
   const hephaestusOverride = agentOverrides["hephaestus"]
+  const allowUnsupportedModel = (hephaestusOverride as Record<string, unknown> | undefined)?.allow_non_gpt_model === true
   const hephaestusRequirement = AGENT_MODEL_REQUIREMENTS["hephaestus"]
   const hasHephaestusExplicitConfig = hephaestusOverride !== undefined
 
@@ -79,7 +80,7 @@ export function maybeCreateHephaestusConfig(input: {
   }
   const { model: hephaestusModel, variant: hephaestusResolvedVariant } = hephaestusResolution
 
-  if (!isHephaestusSupportedModel(hephaestusModel)) {
+  if (!allowUnsupportedModel && !isHephaestusSupportedModel(hephaestusModel)) {
     log("[agent-registration] Agent skipped: unsupported Hephaestus model", {
       agent: "hephaestus",
       configuredModel: hephaestusModel,
@@ -93,7 +94,8 @@ export function maybeCreateHephaestusConfig(input: {
     undefined,
     availableSkills,
     availableCategories,
-    useTaskSystem
+    useTaskSystem,
+    allowUnsupportedModel
   )
 
   hephaestusConfig = { ...hephaestusConfig, variant: hephaestusResolvedVariant ?? "medium" }
@@ -101,7 +103,7 @@ export function maybeCreateHephaestusConfig(input: {
   const hepOverrideCategory = (hephaestusOverride as Record<string, unknown> | undefined)?.category as string | undefined
   if (hepOverrideCategory) {
     hephaestusConfig = applyCategoryOverride(hephaestusConfig, hepOverrideCategory, mergedCategories)
-    if (!isHephaestusSupportedModel(hephaestusConfig.model)) {
+    if (!allowUnsupportedModel && !isHephaestusSupportedModel(hephaestusConfig.model)) {
       log("[agent-registration] Agent skipped: unsupported Hephaestus category model", {
         agent: "hephaestus",
         configuredModel: hephaestusConfig.model,
@@ -114,7 +116,7 @@ export function maybeCreateHephaestusConfig(input: {
 
   if (hephaestusOverride) {
     hephaestusConfig = mergeAgentConfig(hephaestusConfig, hephaestusOverride, directory)
-    if (!isHephaestusSupportedModel(hephaestusConfig.model)) {
+    if (!allowUnsupportedModel && !isHephaestusSupportedModel(hephaestusConfig.model)) {
       log("[agent-registration] Agent skipped: unsupported Hephaestus override model", {
         agent: "hephaestus",
         configuredModel: hephaestusConfig.model,
