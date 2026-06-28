@@ -1,5 +1,5 @@
 import type { PluginInput } from "@opencode-ai/plugin"
-import { isGptModel } from "../../agents/types"
+import { isDeepSeekModel, isGptModel } from "../../agents/types"
 import {
   getSessionAgent,
   resolveRegisteredAgentName,
@@ -14,19 +14,35 @@ const TOAST_MESSAGE = [
   "Hephaestus is trash without GPT.",
   "For Claude/Kimi/GLM models, always use Sisyphus.",
 ].join("\n")
+
+const DEEPSEEK_TOAST_TITLE = "DeepSeek × Hephaestus"
+const DEEPSEEK_TOAST_MESSAGE = "~ 全自动鲸鱼娘已上线 ~ 🐋\nHephaestus running on DeepSeek — let's see what this whale can do."
+
 type NoHephaestusNonGptHookOptions = {
   allowNonGptModel?: boolean
 }
 
-function showToast(ctx: PluginInput, sessionID: string, variant: "error" | "warning"): void {
-  ctx.client.tui.showToast({
-    body: {
-      title: TOAST_TITLE,
-      message: TOAST_MESSAGE,
-      variant,
-      duration: 10000,
-    },
-  }).catch((error) => {
+function showToast(
+  ctx: PluginInput,
+  sessionID: string,
+  variant: "error" | "warning",
+  isDeepSeek: boolean,
+): void {
+  const body = isDeepSeek
+    ? {
+        title: DEEPSEEK_TOAST_TITLE,
+        message: DEEPSEEK_TOAST_MESSAGE,
+        variant,
+        duration: 10000,
+      }
+    : {
+        title: TOAST_TITLE,
+        message: TOAST_MESSAGE,
+        variant,
+        duration: 10000,
+      }
+
+  ctx.client.tui.showToast({ body }).catch((error) => {
     log("[no-hephaestus-non-gpt] Failed to show toast", {
       sessionID,
       error,
@@ -52,8 +68,9 @@ export function createNoHephaestusNonGptHook(
       const allowNonGptModel = options?.allowNonGptModel === true
 
       if (agentKey === "hephaestus" && modelID && !isGptModel(modelID)) {
-        showToast(ctx, input.sessionID, allowNonGptModel ? "warning" : "error")
-        if (allowNonGptModel) {
+        const deepSeek = isDeepSeekModel(modelID)
+        showToast(ctx, input.sessionID, allowNonGptModel ? "warning" : "error", deepSeek)
+        if (allowNonGptModel || deepSeek) {
           return
         }
         input.agent = resolveRegisteredAgentName("sisyphus") ?? "sisyphus"

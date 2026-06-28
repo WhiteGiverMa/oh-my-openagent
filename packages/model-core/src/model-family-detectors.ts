@@ -88,6 +88,11 @@ export function isGlmModel(model: string): boolean {
   return modelName.includes("glm")
 }
 
+export function isDeepSeekModel(model: string): boolean {
+  const modelName = extractModelName(model).toLowerCase()
+  return modelName.includes("deepseek")
+}
+
 const GEMINI_PROVIDERS = ["google/", "google-vertex/"] as const
 
 export function isGeminiModel(model: string): boolean {
