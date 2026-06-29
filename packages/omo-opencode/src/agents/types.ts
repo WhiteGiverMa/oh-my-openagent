@@ -143,6 +143,7 @@ export function isGpt5_6Model(model: string): boolean {
 export type BuiltinAgentName =
   | "sisyphus"
   | "hephaestus"
+  | "meidocho"
   | "oracle"
   | "librarian"
   | "explore"
