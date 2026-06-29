@@ -59,16 +59,6 @@ export const AGENT_MODEL_REQUIREMENTS: Record<string, ModelRequirement> = {
         model: "deepseek-v4-pro",
         variant: "medium",
       },
-      {
-        providers: ["opencode-go", "vercel"],
-        model: "glm-5.2",
-        variant: "medium",
-      },
-      {
-        providers: ["opencode-go", "vercel"],
-        model: "kimi-k2.6",
-        variant: "medium",
-      },
     ],
     requiresAnyModel: true,
   },
