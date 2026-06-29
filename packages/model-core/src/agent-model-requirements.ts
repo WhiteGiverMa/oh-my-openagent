@@ -45,6 +45,33 @@ export const AGENT_MODEL_REQUIREMENTS: Record<string, ModelRequirement> = {
     requiresProvider: ["openai", "github-copilot", "opencode", "vercel"],
     requiresAnyModel: true,
   },
+  meidocho: {
+    fallbackChain: [
+      {
+        providers: [
+          "deepseek",
+          "opencode",
+          "opencode-go",
+          "bailian-coding-plan",
+          "aihubmix",
+          "vercel",
+        ],
+        model: "deepseek-v4-pro",
+        variant: "medium",
+      },
+      {
+        providers: ["opencode-go", "vercel"],
+        model: "glm-5.2",
+        variant: "medium",
+      },
+      {
+        providers: ["opencode-go", "vercel"],
+        model: "kimi-k2.6",
+        variant: "medium",
+      },
+    ],
+    requiresAnyModel: true,
+  },
   oracle: {
     fallbackChain: [
       {
