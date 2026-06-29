@@ -55,6 +55,7 @@ export function collectPendingBuiltinAgents(input: {
 
     if (agentName === "sisyphus") continue
     if (agentName === "hephaestus") continue
+    if (agentName === "meidocho") continue
     if (agentName === "atlas") continue
     if (agentName === "sisyphus-junior") continue
     if (disabledAgents.some((name) => name.toLowerCase() === agentName.toLowerCase())) continue
@@ -119,7 +120,7 @@ export function collectPendingBuiltinAgents(input: {
     config = applyOverrides(config, override, mergedCategories, directory)
     config = resolveAgentSkills(config, { gitMasterConfig, browserProvider, disabledSkills, teamModeEnabled })
 
-    // Store for later - will be added after sisyphus and hephaestus
+    // Store for later - will be added after sisyphus, hephaestus, and meidocho
     pendingAgentConfigs.set(name, config)
 
     const metadata = agentMetadata[agentName]
