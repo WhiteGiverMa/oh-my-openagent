@@ -19,7 +19,7 @@ export const AGENT_DISPLAY_NAMES: Record<string, string> = {
   momus: "Momus - Plan Critic",
   athena: "Athena - Council",
   "athena-junior": "Athena-Junior - Council",
-  meidocho: "Meidocho - Maid Head",
+  meidocho: "Meidocho - 女仆长",
   oracle: "oracle",
   librarian: "librarian",
   explore: "explore",
