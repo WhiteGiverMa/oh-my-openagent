@@ -12,6 +12,7 @@ import { createMetisAgent, metisPromptMetadata } from "./metis"
 import { createAtlasAgent, atlasPromptMetadata } from "./atlas"
 import { createMomusAgent, momusPromptMetadata } from "./momus"
 import { createHephaestusAgent } from "./hephaestus"
+import { createMeidochoAgent, meidochoPromptMetadata } from "./meidocho"
 import { createSisyphusJuniorAgentWithOverrides } from "./sisyphus-junior"
 import type { AvailableCategory } from "./dynamic-agent-prompt-builder"
 import {
@@ -25,6 +26,7 @@ import { buildAvailableSkills } from "./builtin-agents/available-skills"
 import { collectPendingBuiltinAgents } from "./builtin-agents/general-agents"
 import { maybeCreateSisyphusConfig } from "./builtin-agents/sisyphus-agent"
 import { maybeCreateHephaestusConfig } from "./builtin-agents/hephaestus-agent"
+import { maybeCreateMeidochoConfig } from "./builtin-agents/meidocho-agent"
 import { maybeCreateAtlasConfig } from "./builtin-agents/atlas-agent"
 
 type AgentSource = AgentFactory | AgentConfig
@@ -32,6 +34,7 @@ type AgentSource = AgentFactory | AgentConfig
 const agentSources: Record<BuiltinAgentName, AgentSource> = {
   sisyphus: createSisyphusAgent,
   hephaestus: createHephaestusAgent,
+  meidocho: createMeidochoAgent,
   oracle: createOracleAgent,
   librarian: createLibrarianAgent,
   explore: createExploreAgent,
@@ -56,6 +59,7 @@ const agentMetadata: Partial<Record<BuiltinAgentName, AgentPromptMetadata>> = {
   metis: metisPromptMetadata,
   momus: momusPromptMetadata,
   atlas: atlasPromptMetadata,
+  meidocho: meidochoPromptMetadata,
 }
 
 export async function createBuiltinAgents(
@@ -157,7 +161,25 @@ export async function createBuiltinAgents(
     result["hephaestus"] = hephaestusConfig
   }
 
-  // Add pending agents after sisyphus and hephaestus to maintain order
+  const meidochoConfig = maybeCreateMeidochoConfig({
+    disabledAgents,
+    agentOverrides,
+    availableModels,
+    systemDefaultModel,
+    isFirstRunNoCache,
+    availableAgents,
+    availableSkills: buildAvailableSkills(discoveredSkills, browserProvider, disabledSkills, teamModeEnabled, "meidocho"),
+    availableCategories,
+    mergedCategories,
+    directory,
+    useTaskSystem,
+    disableOmoEnv,
+  })
+  if (meidochoConfig) {
+    result["meidocho"] = meidochoConfig
+  }
+
+  // Add pending agents after sisyphus, hephaestus, and meidocho to maintain order
   for (const [name, config] of pendingAgentConfigs) {
     result[name] = config
   }
