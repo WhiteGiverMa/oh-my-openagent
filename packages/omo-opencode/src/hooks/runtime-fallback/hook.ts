@@ -57,6 +57,7 @@ export function createRuntimeFallbackHook(
     sessionFallbackTimeouts: new Map(),
     sessionStatusRetryKeys: new Map(),
     internallyAbortedSessions: new Set(),
+    onWatchdogExhausted: options?.onWatchdogExhausted,
   }
 
   const helpers = factories.createAutoRetryHelpers(deps)

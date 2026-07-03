@@ -16,6 +16,11 @@ export type PendingParentWake = {
   toolCallDeferralStartedAt?: number
   allowEmptyAssistantTurnRetry?: boolean
   noAssistantOutputRetryCount?: number
+  firstDeferredAt?: number
+  deferCount?: number
+  windowRefreshCount?: number
+  forcedQueuedAt?: number
+  forceQueueToken?: number
 }
 
 export function resolveParentWakePromptContext(promptContext: ParentWakePromptContext): ParentWakePromptContext {
@@ -39,12 +44,17 @@ export function cloneParentWake(wake: PendingParentWake): PendingParentWake {
     ...(wake.toolCallDeferralStartedAt !== undefined
       ? { toolCallDeferralStartedAt: wake.toolCallDeferralStartedAt }
       : {}),
-    ...(wake.allowEmptyAssistantTurnRetry !== undefined
-      ? { allowEmptyAssistantTurnRetry: wake.allowEmptyAssistantTurnRetry }
+...(wake.allowEmptyAssistantTurnRetry !== undefined
+? { allowEmptyAssistantTurnRetry: wake.allowEmptyAssistantTurnRetry }
       : {}),
     ...(wake.noAssistantOutputRetryCount !== undefined
       ? { noAssistantOutputRetryCount: wake.noAssistantOutputRetryCount }
       : {}),
+    ...(wake.firstDeferredAt !== undefined ? { firstDeferredAt: wake.firstDeferredAt } : {}),
+    ...(wake.deferCount !== undefined ? { deferCount: wake.deferCount } : {}),
+    ...(wake.windowRefreshCount !== undefined ? { windowRefreshCount: wake.windowRefreshCount } : {}),
+    ...(wake.forcedQueuedAt !== undefined ? { forcedQueuedAt: wake.forcedQueuedAt } : {}),
+    ...(wake.forceQueueToken !== undefined ? { forceQueueToken: wake.forceQueueToken } : {}),
   }
 }
 

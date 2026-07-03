@@ -15,6 +15,9 @@ import {
 
 export type { ParentWakePromptContext, PendingParentWake } from "./parent-wake-dedupe"
 
+const DEFAULT_PARENT_WAKE_MAX_DEFER_MS = 120_000
+const DEFAULT_PARENT_WAKE_MAX_WINDOW_REFRESHES = 3
+
 export class ParentWakeNotifier {
   private readonly pendingQueue: ParentWakePendingQueue
   private readonly dispatchedTracker: ParentWakeDispatchedTracker
@@ -41,6 +44,8 @@ export class ParentWakeNotifier {
           sessionInspector: this.sessionInspector,
           requeueWake: (latestWake) => this.requeueWake(sessionID, latestWake),
           scheduleFlush: () => this.schedulePendingParentWakeFlush(sessionID),
+          pendingQueue: this.pendingQueue,
+          maxWindowRefreshes: options.maxWindowRefreshes ?? DEFAULT_PARENT_WAKE_MAX_WINDOW_REFRESHES,
         }).catch((error: unknown) => {
           logParentWakeWindowRecoveryError(
             sessionID,
@@ -66,6 +71,7 @@ export class ParentWakeNotifier {
       pendingQueue: this.pendingQueue,
       dispatchedTracker: this.dispatchedTracker,
       sessionInspector: this.sessionInspector,
+      maxDeferMs: options.maxDeferMs ?? DEFAULT_PARENT_WAKE_MAX_DEFER_MS,
     })
   }
 
@@ -118,6 +124,51 @@ export class ParentWakeNotifier {
 
   async flushPendingParentWake(sessionID: string): Promise<void> {
     await this.flushRunner.flushPendingParentWake(sessionID)
+  }
+
+  /**
+   * Immediately force-enqueue a completion notification without the defer cycle.
+   * Unlike the normal path (queue → defer while parent busy → force after 120s),
+   * this skips straight to the force dispatch: noReply + enqueue at gate.
+   * Only safe for completion notifications (shouldReply=false) — reply-required
+   * wakes must still go through the full safety path.
+   */
+  forceEnqueueCompletion(
+    sessionID: string,
+    notification: string,
+    promptContext: ParentWakePromptContext,
+  ): void {
+    this.pendingQueue.queueWake(sessionID, notification, promptContext, false)
+    const wake = this.pendingQueue.getWake(sessionID)
+    if (!wake) return
+    // Set deferral budget to expired so the flush runner immediately
+    // takes the force-dispatch path without any isSessionActive check.
+    wake.firstDeferredAt = 0
+    wake.deferCount = 0
+    void this.flushRunner.flushPendingParentWake(sessionID)
+  }
+
+  /**
+   * Enqueue a completion notification directly to the prompt gate.
+   * Like a user sending a new message — the notification is queued
+   * and automatically injected at the next turn boundary. The parent
+   * agent processes it naturally and responds.
+   */
+  enqueueToGate(
+    sessionID: string,
+    notification: string,
+    promptContext: ParentWakePromptContext,
+    shouldReply: boolean,
+  ): void {
+    this.pendingQueue.queueWake(sessionID, notification, promptContext, shouldReply)
+    // Clear deferred state from forceEnqueueCompletion path so the old
+    // flush runner doesn't fire after we've already enqueued to the gate.
+    // Without this, multi-subagent all-complete can produce duplicate
+    // notifications: enqueueToGate (reply) + forceDispatchAfterMaxDeferral
+    // (noReply) + retained shouldReply re-dispatch (reply).
+    this.clearPendingParentWakeTimer(sessionID)
+    this.clearDispatchedParentWake(sessionID)
+    void this.flushRunner.enqueueWakeToGate(sessionID)
   }
 
   clearDispatchedParentWake(sessionID: string): void {
