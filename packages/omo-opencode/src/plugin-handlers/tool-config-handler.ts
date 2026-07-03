@@ -129,6 +129,18 @@ export function applyToolConfig(params: {
       ...denyTodoTools,
     };
   }
+  const meidocho = agentByKey(params.agentResult, "meidocho", params.pluginConfig);
+  if (meidocho) {
+    meidocho.permission = {
+      ...meidocho.permission,
+      call_omo_agent: "deny",
+      task: "allow",
+      question: questionPermission,
+      "task_*": "allow",
+      teammate: "allow",
+      ...denyTodoTools,
+    };
+  }
   const prometheus = agentByKey(params.agentResult, "prometheus", params.pluginConfig);
   if (prometheus) {
     prometheus.permission = {
