@@ -69,6 +69,28 @@ export class ParentWakeFlushRunner {
       return
     }
 
+    // BUG B4: force-dispatch infinite loop. forceDispatchAfterMaxDeferral
+    // admits a shouldReply wake (sets noReplyAdmittedAt), then
+    // markRetainedNoReplyAdmission in sendParentWakePrompt calls scheduleFlush
+    // which re-enters this function. Without this guard the wake is deferred
+    // → force-dispatched again → scheduleFlush → loop every ~120s.
+    //
+    // The wake is already in parent session history via the force admission.
+    // If the parent is still active, just wait — session.idle will naturally
+    // re-flush when the parent becomes idle and ready to reply.
+    // If the parent is already idle, fall through and dispatch normally.
+    if (initialWake.shouldReply && initialWake.noReplyAdmittedAt !== undefined) {
+      if (await this.isSessionActive(sessionID)) {
+        this.clearPendingParentWakeTimer(sessionID)
+        log("[background-agent] Skipping re-flush for already force-admitted shouldReply wake (parent active):", {
+          sessionID,
+        })
+        return
+      }
+      // Parent is idle — fall through to the normal dispatch path below.
+      // session.idle triggered this re-flush; deliver the reply now.
+    }
+
     const sessionActive = await this.isSessionActive(sessionID)
     this.clearPendingParentWakeTimer(sessionID)
     if (!sessionActive) {
