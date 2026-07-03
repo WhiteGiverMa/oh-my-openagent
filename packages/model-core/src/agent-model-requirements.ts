@@ -52,7 +52,7 @@ export const AGENT_MODEL_REQUIREMENTS: Record<string, ModelRequirement> = {
           "vercel",
         ],
         model: "deepseek-v4-pro",
-        variant: "medium",
+        variant: "max",
       },
     ],
     requiresAnyModel: true,
