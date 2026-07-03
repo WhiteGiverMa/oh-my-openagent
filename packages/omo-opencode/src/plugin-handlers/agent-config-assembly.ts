@@ -112,6 +112,10 @@ async function createCoreAgentConfig(
     agentConfig.hephaestus = builtinAgents.hephaestus;
   }
 
+  if (builtinAgents.meidocho) {
+    agentConfig.meidocho = builtinAgents.meidocho;
+  }
+
   if (pluginConfig.sisyphus_agent?.planner_enabled ?? true) {
     agentConfig.prometheus = await buildPrometheusAgentConfig({
       configAgentPlan: sources.configAgent?.plan,
@@ -204,7 +208,7 @@ async function assembleSisyphusEnabledConfig(params: AssembleAgentConfigParams):
     ...agentConfig,
     ...Object.fromEntries(
       Object.entries(params.builtinAgents).filter(
-        ([key]) => key !== "sisyphus" && key !== "hephaestus" && key !== "atlas",
+        ([key]) => key !== "sisyphus" && key !== "hephaestus" && key !== "atlas" && key !== "meidocho",
       ),
     ),
     ...orderedCustomAgentSources(filteredSources, params.disabledAgentNames),
