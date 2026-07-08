@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from "node:fs"
 import { homedir } from "node:os"
 import { isAbsolute, join, resolve } from "node:path"
+import { fileURLToPath } from "node:url"
 import { isWithinProject } from "../../shared/contains-path"
 import { log } from "../../shared/logger"
 
@@ -22,20 +23,26 @@ function isWithinAllowedPaths(filePath: string, projectRoot: string): boolean {
 export function resolvePromptAppend(promptAppend: string, configDir?: string): string {
   if (!promptAppend.startsWith("file://")) return promptAppend
 
-  const encoded = promptAppend.slice(7)
-
   let filePath: string
   try {
-    const decoded = decodeURIComponent(encoded)
-    const expanded = decoded.startsWith("~/") ? decoded.replace(/^~\//, `${homedir()}/`) : decoded
-    filePath = isAbsolute(expanded)
-      ? expanded
-      : resolve(configDir ?? process.cwd(), expanded)
-  } catch (error) {
-    if (!(error instanceof Error)) {
-      throw error
+    // ponytail: fileURLToPath correctly handles standard file:/// URIs on Windows
+    // (drive letters, separator normalization). Non-standard legacy formats
+    // (file://path, file://~/..., file://./relative) fall through to the fallback below.
+    filePath = fileURLToPath(promptAppend)
+  } catch {
+    const encoded = promptAppend.slice(7)
+    try {
+      const decoded = decodeURIComponent(encoded)
+      const expanded = decoded.startsWith("~/") ? decoded.replace(/^~\//, `${homedir()}/`) : decoded
+      filePath = isAbsolute(expanded)
+        ? expanded
+        : resolve(configDir ?? process.cwd(), expanded)
+    } catch (error) {
+      if (!(error instanceof Error)) {
+        throw error
+      }
+      return `[WARNING: Malformed file URI (invalid percent-encoding): ${promptAppend}]`
     }
-    return `[WARNING: Malformed file URI (invalid percent-encoding): ${promptAppend}]`
   }
 
   const projectRoot = configDir ?? process.cwd()
