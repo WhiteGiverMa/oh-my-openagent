@@ -26,6 +26,28 @@ export class ParentWakeFlushRunner {
       return
     }
 
+    // BUG B4: force-dispatch infinite loop guard. forceDispatchAfterActiveDefer
+    // admits a shouldReply wake (sets noReplyAdmittedAt), then
+    // markRetainedNoReplyAdmission in sendParentWakePrompt calls scheduleFlush
+    // which re-enters this function. Without this guard the wake is deferred
+    // → force-dispatched again → scheduleFlush → loop every ~60s.
+    //
+    // The wake is already in parent session history via the force admission.
+    // If the parent is still active, just wait — session.idle will naturally
+    // re-flush when the parent becomes idle and ready to reply.
+    // If the parent is already idle, fall through to the normal dispatch path.
+    const initialWake = this.deps.pendingQueue.getWake(sessionID)
+    if (initialWake?.shouldReply && initialWake.noReplyAdmittedAt !== undefined) {
+      if (await this.isSessionActive(sessionID)) {
+        this.clearPendingParentWakeTimer(sessionID)
+        log("[background-agent] Skipping re-flush for already force-admitted shouldReply wake (parent active):", {
+          sessionID,
+        })
+        return
+      }
+      // Parent is idle — fall through to normal dispatch.
+    }
+
     const sessionActive = await this.isSessionActive(sessionID)
     this.clearPendingParentWakeTimer(sessionID)
     if (!sessionActive) {
@@ -61,18 +83,12 @@ export class ParentWakeFlushRunner {
       if (this.deferReplyWakeWhileUnsafe(sessionID, latestWake)) {
         return
       }
-      await this.sendParentWakePrompt(sessionID, latestWake, {
-        emptyAssistantTurnRetry: false,
-        toolWaitDecision: { defer: false, skipPromptGateToolStateCheck: true },
-        forceNoReply: true,
-        retainPendingWake: latestWake.shouldReply,
-      })
-      log("[background-agent] Recorded admit-only parent wake because parent session activity is still fresh:", {
+      // Patch 5: defer instead of admit-only noReply. shouldReply wakes must not
+      // be silently consumed — they need to actually trigger an assistant turn.
+      this.schedulePendingParentWakeFlush(sessionID)
+      log("[background-agent] Deferred parent wake (no admit-only) because parent session activity is still fresh:", {
         sessionID,
       })
-      if (latestWake.shouldReply) {
-        this.schedulePendingParentWakeFlush(sessionID)
-      }
       return
     }
 
@@ -81,11 +97,10 @@ export class ParentWakeFlushRunner {
       if (this.deferReplyWakeWhileUnsafe(sessionID, latestWake)) {
         return
       }
-      await this.sendParentWakePrompt(sessionID, latestWake, {
-        emptyAssistantTurnRetry,
-        toolWaitDecision: { ...toolWaitDecision, skipPromptGateToolStateCheck: true },
-        forceNoReply: true,
-        retainPendingWake: latestWake.shouldReply,
+      // Patch 5: defer instead of admit-only noReply.
+      this.schedulePendingParentWakeFlush(sessionID)
+      log("[background-agent] Deferred parent wake (no admit-only) because tool wait deferred:", {
+        sessionID,
       })
       return
     }
@@ -100,13 +115,9 @@ export class ParentWakeFlushRunner {
       if (this.deferReplyWakeWhileUnsafe(sessionID, latestWake)) {
         return
       }
-      await this.sendParentWakePrompt(sessionID, latestWake, {
-        emptyAssistantTurnRetry,
-        toolWaitDecision: { defer: false, skipPromptGateToolStateCheck: true },
-        forceNoReply: true,
-        retainPendingWake: latestWake.shouldReply,
-      })
-      log("[background-agent] Recorded admit-only parent wake because user message just arrived:", {
+      // Patch 5: defer instead of admit-only noReply.
+      this.schedulePendingParentWakeFlush(sessionID)
+      log("[background-agent] Deferred parent wake (no admit-only) because user message just arrived:", {
         sessionID,
       })
       return
@@ -121,13 +132,9 @@ export class ParentWakeFlushRunner {
       if (this.deferReplyWakeWhileUnsafe(sessionID, latestWake)) {
         return
       }
-      await this.sendParentWakePrompt(sessionID, latestWake, {
-        emptyAssistantTurnRetry,
-        toolWaitDecision: { ...finalToolWaitDecision, skipPromptGateToolStateCheck: true },
-        forceNoReply: true,
-        retainPendingWake: latestWake.shouldReply,
-      })
-      log("[background-agent] Recorded admit-only parent wake because parent session history became unsafe:", {
+      // Patch 5: defer instead of admit-only noReply.
+      this.schedulePendingParentWakeFlush(sessionID)
+      log("[background-agent] Deferred parent wake (no admit-only) because parent session history became unsafe:", {
         sessionID,
       })
       return
