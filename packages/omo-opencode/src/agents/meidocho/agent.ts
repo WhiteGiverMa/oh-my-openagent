@@ -42,6 +42,7 @@ function buildDynamicMeidochoPrompt(ctx?: MeidochoContext): string {
     skills,
     categories,
     useTaskSystem,
+    ctx?.model,
   );
 
   const agentIdentity = buildAgentIdentitySection(
