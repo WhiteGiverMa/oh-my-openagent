@@ -4,6 +4,7 @@ import type { LoadedSkill } from "./types"
 import type { SkillResolutionOptions } from "./skill-resolution-options"
 
 const cachedSkillsByProvider = new Map<string, LoadedSkill[]>()
+const SHARED_SKILL_PREFIX = "shared/"
 
 function isDisabledAlias(name: string, disabledSkills: ReadonlySet<string>): boolean {
 	const normalizedName = name.toLowerCase()
@@ -16,8 +17,31 @@ function isDisabledAlias(name: string, disabledSkills: ReadonlySet<string>): boo
 	return false
 }
 
+function skillNameLeaf(name: string): string {
+	const parts = name.split("/")
+	return parts[parts.length - 1] ?? name
+}
+
 export function isDisabledSkillAlias(skill: LoadedSkill, disabledSkills: ReadonlySet<string>): boolean {
-	return isDisabledAlias(skill.name, disabledSkills)
+	const normalizedSkillName = skill.name.toLowerCase()
+	if (isDisabledAlias(normalizedSkillName, disabledSkills)) {
+		return true
+	}
+
+	if (skill.scope !== "shared") {
+		return false
+	}
+
+	if (normalizedSkillName.startsWith(SHARED_SKILL_PREFIX)) {
+		const stripped = normalizedSkillName.slice(SHARED_SKILL_PREFIX.length)
+		if (isDisabledAlias(stripped, disabledSkills)) return true
+		// Also check the leaf name (e.g. "skills/git-master" -> "git-master")
+		// Handles OpenCode native skills registered with path-like names: "shared/skills/git-master"
+		const leaf = skillNameLeaf(stripped)
+		if (leaf !== stripped && isDisabledAlias(leaf, disabledSkills)) return true
+	}
+
+	return isDisabledAlias(`${SHARED_SKILL_PREFIX}${normalizedSkillName}`, disabledSkills)
 }
 
 export function clearSkillCache(): void {
