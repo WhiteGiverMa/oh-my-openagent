@@ -150,9 +150,24 @@ export function createSkillTool(options: SkillLoadOptions): ToolDefinition {
       })
 
       if (matchedSkill) {
+        // Patch 12: Include leaf-name in permission patterns so that
+        // `permission.skill` rules like `"git-master": "deny"` also match
+        // canonical alias names such as `shared/git-master` or
+        // `shared/skills/git-master`.  OpenCode's evaluate() denies if ANY
+        // pattern in the array hits a deny rule, so adding the leaf-name
+        // alongside the full name closes the bypass.
+        const skillLeafName =
+          matchedSkill.name.includes("/")
+            ? matchedSkill.name.split("/").pop() ?? matchedSkill.name
+            : matchedSkill.name
+        const permissionPatterns =
+          skillLeafName !== matchedSkill.name
+            ? [matchedSkill.name, skillLeafName]
+            : [matchedSkill.name]
+
         await ctx?.ask({
           permission: "skill",
-          patterns: [matchedSkill.name],
+          patterns: permissionPatterns,
           always: [matchedSkill.name],
           metadata: {
             skill: matchedSkill.name,
