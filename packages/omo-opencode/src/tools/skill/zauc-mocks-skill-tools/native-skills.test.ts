@@ -135,4 +135,31 @@ describe("skill tool - nativeSkills integration", () => {
       'Skill or command "blocked-native-skill" not found',
     )
   })
+
+  it("does not reintroduce disabled path-prefixed native skill aliases", async () => {
+    const tool = createSkillTool({
+      directory: "/test",
+      skills: [createMockSkill("enabled-skill")],
+      disabledSkills: new Set(["ulw-plan", "review-work"]),
+      includeSkillsInDescription: true,
+      nativeSkills: {
+        all() {
+          return [{
+            name: "skills/ulw-plan",
+            description: "Disabled path-prefixed native skill",
+            location: "/external/skills/ulw-plan/SKILL.md",
+            content: "DISABLED_PATH_ALIAS_BODY",
+          }]
+        },
+        get() { return undefined },
+        dirs() { return [] },
+      },
+    })
+
+    expect(tool.description).not.toContain("skills/ulw-plan")
+    expect(tool.description).not.toContain("name='review-work'")
+    await expect(tool.execute({ name: "skills/ulw-plan" }, mockContext)).rejects.toThrow(
+      'Skill or command "skills/ulw-plan" not found',
+    )
+  })
 })

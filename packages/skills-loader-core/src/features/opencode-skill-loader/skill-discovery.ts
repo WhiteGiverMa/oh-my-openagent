@@ -27,6 +27,10 @@ export function isDisabledSkillAlias(skill: LoadedSkill, disabledSkills: Readonl
 	if (isDisabledAlias(normalizedSkillName, disabledSkills)) {
 		return true
 	}
+	const leaf = skillNameLeaf(normalizedSkillName)
+	if (leaf !== normalizedSkillName && isDisabledAlias(leaf, disabledSkills)) {
+		return true
+	}
 
 	if (skill.scope !== "shared") {
 		return false
@@ -35,10 +39,6 @@ export function isDisabledSkillAlias(skill: LoadedSkill, disabledSkills: Readonl
 	if (normalizedSkillName.startsWith(SHARED_SKILL_PREFIX)) {
 		const stripped = normalizedSkillName.slice(SHARED_SKILL_PREFIX.length)
 		if (isDisabledAlias(stripped, disabledSkills)) return true
-		// Also check the leaf name (e.g. "skills/git-master" -> "git-master")
-		// Handles OpenCode native skills registered with path-like names: "shared/skills/git-master"
-		const leaf = skillNameLeaf(stripped)
-		if (leaf !== stripped && isDisabledAlias(leaf, disabledSkills)) return true
 	}
 
 	return isDisabledAlias(`${SHARED_SKILL_PREFIX}${normalizedSkillName}`, disabledSkills)
