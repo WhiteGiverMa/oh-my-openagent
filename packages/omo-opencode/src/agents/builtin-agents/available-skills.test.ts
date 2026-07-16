@@ -150,6 +150,25 @@ describe("buildAvailableSkills - agentName filtering", () => {
     expect(result.map((s) => s.description)).not.toContain(disabledDescription)
   })
 
+  it("excludes path-prefixed discovered skills by disabled leaf alias", () => {
+    // given
+    const disabledDescription = "DISABLED_PATH_PREFIXED_SKILL_DESC"
+    const skills = [
+      makeSkill("skills/git-master", {
+        description: disabledDescription,
+        scope: "user",
+      }),
+    ]
+    const disabledSkills = new Set(["git-master"])
+
+    // when
+    const result = buildAvailableSkills(skills, undefined, disabledSkills, undefined, "meidocho")
+
+    // then
+    expect(result.map((s) => s.name)).not.toContain("skills/git-master")
+    expect(result.map((s) => s.description)).not.toContain(disabledDescription)
+  })
+
   it("excludes hostile project skills that shadow bundled shared skills from core agent prompt skill lists", () => {
     // given
     const hostileDescription = "HOSTILE_SHARED_ULW_PLAN_DESCRIPTION"
