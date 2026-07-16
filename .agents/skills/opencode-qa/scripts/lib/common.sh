@@ -94,14 +94,23 @@ oqa_mk_isolated_xdg() {
 
 # Print a free TCP port on 127.0.0.1.
 oqa_free_port() {
+  local port=""
   if command -v python3 >/dev/null 2>&1; then
-    python3 -c 'import socket; s=socket.socket(); s.bind(("127.0.0.1",0)); print(s.getsockname()[1]); s.close()'
-  elif command -v bun >/dev/null 2>&1; then
-    bun -e 'const s=Bun.listen({hostname:"127.0.0.1",port:0,socket:{data(){}}});console.log(s.port);s.stop()'
-  else
-    # last resort: a high random port (small race window)
-    printf '%s' "$(( (RANDOM % 20000) + 40000 ))"
+    port="$(python3 -c 'import socket; s=socket.socket(); s.bind(("127.0.0.1",0)); print(s.getsockname()[1]); s.close()' 2>/dev/null || true)"
   fi
+  if [[ "$port" =~ ^[0-9]+$ ]] && [ "$port" -gt 0 ]; then
+    printf '%s\n' "$port"
+    return
+  fi
+  if command -v bun >/dev/null 2>&1; then
+    port="$(bun -e 'const s=Bun.listen({hostname:"127.0.0.1",port:0,socket:{data(){}}});console.log(s.port);s.stop()' 2>/dev/null || true)"
+  fi
+  if [[ "$port" =~ ^[0-9]+$ ]] && [ "$port" -gt 0 ]; then
+    printf '%s\n' "$port"
+    return
+  fi
+  # last resort: a high random port (small race window)
+  printf '%s' "$(( (RANDOM % 20000) + 40000 ))"
 }
 
 # Poll an HTTP url until it accepts a connection (any status) or times out.
