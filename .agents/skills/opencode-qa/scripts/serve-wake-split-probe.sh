@@ -193,13 +193,18 @@ swsp_write_omo_config() {
 swsp_write_opencode_config() {
   local cfg_dir="$1"
   local fake_port="$2"
-  local repo_root
+  local repo_root plugin_uri
   repo_root="$(cd "$SCRIPT_DIR/../../../.." && pwd)"
+  if command -v cygpath >/dev/null 2>&1; then
+    plugin_uri="file:///$(cygpath -m "$repo_root")/packages/omo-opencode/src/index.ts"
+  else
+    plugin_uri="file://${repo_root}/packages/omo-opencode/src/index.ts"
+  fi
 
   mkdir -p "$cfg_dir/opencode"
   cat >"$cfg_dir/opencode/opencode.jsonc" <<JSONC
 {
-  "plugin": ["file://${repo_root}/packages/omo-opencode/src/index.ts"],
+  "plugin": ["${plugin_uri}"],
   "model": "openai/gpt-fake",
   "provider": {
     "openai": {
