@@ -253,13 +253,19 @@ swsp_poll_db_metrics() {
       counts AS (
         SELECT
           count(a.id) AS parent_assistant_messages,
-          sum(CASE WHEN json_extract(a.data, '\$.finish') = 'tool-calls' THEN 1 ELSE 0 END) AS parent_tool_call_turns,
-          sum(CASE WHEN json_extract(a.data, '\$.finish') = 'stop' THEN 1 ELSE 0 END) AS terminal_stops
+          sum(CASE WHEN json_extract(a.data, '\$.finish') = 'tool-calls' THEN 1 ELSE 0 END) AS parent_tool_call_turns
         FROM target t
         LEFT JOIN message a
           ON a.session_id = t.session_id
           AND json_extract(a.data, '\$.parentID') = t.user_id
         GROUP BY t.user_id
+      ),
+      session_terminal_stops AS (
+        SELECT count(DISTINCT a.id) AS terminal_stops
+        FROM target t
+        JOIN message a ON a.session_id = t.session_id
+        WHERE json_extract(a.data, '\$.role') = 'assistant'
+          AND json_extract(a.data, '\$.finish') = 'stop'
       ),
       child_task_sessions AS (
         SELECT count(DISTINCT m.session_id) AS child_task_sessions
@@ -272,7 +278,7 @@ swsp_poll_db_metrics() {
       SELECT printf('%d %d %d %d',
         coalesce((SELECT max(parent_assistant_messages) FROM counts), 0),
         coalesce((SELECT max(parent_tool_call_turns) FROM counts), 0),
-        coalesce((SELECT max(terminal_stops) FROM counts), 0),
+        coalesce((SELECT terminal_stops FROM session_terminal_stops), 0),
         coalesce((SELECT child_task_sessions FROM child_task_sessions), 0)
       );
   "
@@ -307,14 +313,14 @@ swsp_poll_db_metrics() {
 }
 
 # Wait until a session is no longer in the server's active status map.
-# Args: server_url pass session_id timeout_s
+# Args: server_url pass session_id encoded_directory timeout_s
 swsp_wait_session_idle() {
-  local url="$1" pass="$2" ses_id="$3" timeout_s="${4:-120}"
+  local url="$1" pass="$2" ses_id="$3" encoded_dir="$4" timeout_s="${5:-120}"
   local deadline
   deadline=$(( $(date +%s) + timeout_s ))
   while [ "$(date +%s)" -lt "$deadline" ]; do
     local status_json
-    status_json="$(curl -sf -u "opencode:${pass}" "${url}/session/status" 2>/dev/null)" || true
+    status_json="$(curl -sf -u "opencode:${pass}" "${url}/session/status?directory=${encoded_dir}" 2>/dev/null)" || true
     if [ -z "$status_json" ] || ! printf '%s' "$status_json" | grep -q "$ses_id" 2>/dev/null; then
       return 0
     fi
@@ -329,14 +335,18 @@ swsp_wait_session_idle() {
 swsp_count_plugin_inits() {
   local offset="$1"
   local sandbox_dir="$2"
+  local sandbox_marker
   local log_path="${TMPDIR:-/tmp}/oh-my-opencode.log"
+  sandbox_marker="$(basename "$(dirname "$sandbox_dir")")"
   if [ ! -f "$log_path" ]; then
     printf '0'
     return 0
   fi
   swsp_tail_log_since_offset "$offset" "$log_path" \
     | grep "ENTRY - plugin loading" \
-    | awk -v sandbox_dir="$sandbox_dir" 'index($0, sandbox_dir) { count += 1 } END { print count + 0 }'
+    | grep -F "$sandbox_marker" \
+    | wc -l \
+    | tr -d '[:space:]'
 }
 
 # Detect WAKE_DISPATCHED_DURING_PARENT_TURN:
@@ -434,12 +444,12 @@ swsp_fixed_topology_observed() {
   if [ "${terminal_stops:-0}" -ne 1 ] \
     || [ "${child_task_sessions:-0}" -ne 1 ] \
     || [ "${parent_tool_call_turns:-0}" -ne 2 ] \
-    || [ "${parent_assistant_messages:-0}" -ne 3 ] \
+    || [ "${parent_assistant_messages:-0}" -ne 2 ] \
     || [ "${parent_tool_call_branches:-0}" -ne 1 ] \
     || [ "${parent_hold_branches:-0}" -ne 1 ] \
     || [ "${child_branches:-0}" -ne 1 ] \
-    || [ "${default_branches:-0}" -lt 1 ] \
-    || [ "${wake_branches:-0}" -ne 0 ] 2>/dev/null; then
+    || [ "${default_branches:-0}" -ne 0 ] \
+    || [ "${wake_branches:-0}" -ne 1 ] 2>/dev/null; then
     return 1
   fi
 
@@ -614,28 +624,28 @@ swsp_self_test() {
     fails=$((fails+1))
   fi
 
-  if swsp_fixed_topology_observed 3 2 1 1 1 1 1 0 1 true; then
+  if swsp_fixed_topology_observed 2 2 1 1 1 1 1 1 0 true; then
     swsp_info "PASS: fixed topology accepts scoped live dispatch plus deterministic DB/provider evidence"
   else
     swsp_log "FAIL: fixed topology rejected scoped live dispatch plus deterministic DB/provider evidence"
     fails=$((fails+1))
   fi
 
-  if swsp_fixed_topology_observed 3 2 1 1 1 1 1 0 1 false; then
+  if swsp_fixed_topology_observed 2 2 1 1 1 1 1 1 0 false; then
     swsp_log "FAIL: fixed topology accepted missing scoped live dispatch"
     fails=$((fails+1))
   else
     swsp_info "PASS: fixed topology rejects missing scoped live dispatch"
   fi
 
-  if swsp_fixed_topology_observed bad 2 1 1 1 1 1 0 1 true; then
+  if swsp_fixed_topology_observed bad 2 1 1 1 1 1 1 0 true; then
     swsp_log "FAIL: fixed topology accepted malformed numeric evidence"
     fails=$((fails+1))
   else
     swsp_info "PASS: fixed topology rejects malformed numeric evidence"
   fi
 
-  if swsp_fixed_topology_observed 3 2 2 1 1 1 1 0 1 true; then
+  if swsp_fixed_topology_observed 2 2 2 1 1 1 1 1 0 true; then
     swsp_log "FAIL: fixed topology accepted duplicate terminal stop"
     fails=$((fails+1))
   else
@@ -845,7 +855,7 @@ swsp_run_probe() {
 
   # Wait for parent session to go idle
   swsp_info "waiting for parent session to go idle..."
-  swsp_wait_session_idle "$OQA_SERVER_URL" "$pass" "$ses_id" 60
+  swsp_wait_session_idle "$OQA_SERVER_URL" "$pass" "$ses_id" "$enc_dir" 60
 
   # Re-read metrics after idle
   metrics="$(swsp_poll_db_metrics "$sandbox_db" '%Run the split probe:%' 10)"
@@ -880,7 +890,7 @@ swsp_run_probe() {
     "$evidence_dir/route-provenance-all.log" \
     10 || true
   route_prov="$(cat "$evidence_dir/route-provenance.log" 2>/dev/null || true)"
-  swsp_info "route-provenance lines: $(printf '%s' "$route_prov" | wc -l | tr -d ' ')"
+  swsp_info "route-provenance lines: $(printf '%s\n' "$route_prov" | grep -c . || true)"
 
   # WAKE_DISPATCHED_DURING_PARENT_TURN mechanism signal
   local wake_during_parent
