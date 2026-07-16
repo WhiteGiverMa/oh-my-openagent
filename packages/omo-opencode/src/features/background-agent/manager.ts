@@ -58,6 +58,8 @@ import { ConcurrencyManager } from "./concurrency"
 import {
   POLLING_INTERVAL_MS,
   type QueueItem,
+  SESSION_ERROR_TRANSIENT_THRESHOLD,
+  SESSION_ERROR_WINDOW_MS,
   TASK_CLEANUP_DELAY_MS,
   TASK_TTL_MS,
 } from "./constants"
@@ -2082,14 +2084,32 @@ The fallback retry session is now created and can be inspected directly.
     if (sessionId) {
       const sessionStillAlive = await this.verifySessionExists(sessionId)
       if (sessionStillAlive && !isTerminalSessionError(errorInfo)) {
-        this.logger("[background-agent] session.error received but session still alive, treating as transient:", {
+        // Repeated errors from a still-live session indicate it is not recovering.
+        const now = Date.now()
+        const lastSessionErrorAt = task.lastSessionErrorAt?.getTime()
+        if (lastSessionErrorAt !== undefined && now - lastSessionErrorAt > SESSION_ERROR_WINDOW_MS) {
+          task.sessionErrorCount = 0
+        }
+        task.sessionErrorCount = (task.sessionErrorCount ?? 0) + 1
+        task.lastSessionErrorAt = new Date(now)
+
+        if (task.sessionErrorCount < SESSION_ERROR_TRANSIENT_THRESHOLD) {
+          this.logger("[background-agent] session.error received but session still alive, treating as transient:", {
+            taskId: task.id,
+            sessionId,
+            sessionErrorCount: task.sessionErrorCount,
+            errorMessage: errorMsg?.slice(0, 200),
+          })
+          return
+        }
+
+        this.logger("[background-agent] session.error repeated past transient threshold while session alive, failing task:", {
           taskId: task.id,
           sessionId,
+          sessionErrorCount: task.sessionErrorCount,
           errorMessage: errorMsg?.slice(0, 200),
         })
-        return
-      }
-      if (sessionStillAlive && isTerminalSessionError(errorInfo)) {
+      } else if (sessionStillAlive && isTerminalSessionError(errorInfo)) {
         this.logger("[background-agent] Finalizing task after terminal session.error (session shell alive but will never produce output):", {
           taskId: task.id,
           sessionId,
@@ -2945,6 +2965,28 @@ The task was re-queued on a fallback model after a retryable failure.
 
   private async verifySessionExists(sessionID: string): Promise<boolean> {
     return verifySessionStillExists(this.client, sessionID, this.directory)
+  }
+
+  /**
+   * Surface a first-prompt-watchdog give-up (no fallback chain configured) for a
+   * background subagent. Fails the task with a descriptive error so the parent
+   * is notified. No-op for sessions that are not background tasks.
+   */
+  async failWatchdogExhaustedTask(sessionID: string, info: { model?: string; agent?: string } = {}): Promise<void> {
+    const task = this.findBySession(sessionID)
+    if (!task) return
+    if (task.status !== "running") return
+    const modelLabel = info.model ? ` on model ${info.model}` : ""
+    log("[background-agent] First-prompt watchdog exhausted with no fallback, failing task:", {
+      taskId: task.id,
+      sessionID,
+      model: info.model,
+      agent: info.agent,
+    })
+    await this.failCrashedTask(
+      task,
+      `Subagent produced no progress${modelLabel} and the first-prompt watchdog exhausted its same-model retries with no fallback model configured.`,
+    )
   }
 
   private async failCrashedTask(task: BackgroundTask, errorMessage: string): Promise<void> {
