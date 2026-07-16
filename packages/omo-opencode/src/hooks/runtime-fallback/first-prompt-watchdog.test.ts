@@ -359,7 +359,7 @@ describe("first-prompt-watchdog", () => {
 
     // when
     watchdog.onUserMessage(sessionID, PRIMARY_MODEL, AGENT)
-    await wait(SAFE_WAIT_AFTER_FIRE_MS)
+    await getFakeTimers().advanceBy(SAFE_WAIT_AFTER_FIRE_MS)
 
     // then
     expect(calls.abort).toEqual([])
