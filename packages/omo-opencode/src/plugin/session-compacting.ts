@@ -121,6 +121,10 @@ export function createSessionCompactingHandler(
       const context = inject ? inject(input.sessionID) : undefined
       if (context) {
         output.context.push(context)
+        const promptParts = [output.prompt, ...output.context].filter(
+          (part): part is string => Boolean(part),
+        )
+        output.prompt = promptParts.join("\n\n")
       }
     })
   }

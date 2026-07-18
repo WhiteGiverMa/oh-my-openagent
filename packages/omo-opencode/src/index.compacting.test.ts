@@ -46,6 +46,29 @@ describe("experimental.session.compacting handler", () => {
     expect(output.context).toEqual(["context-for-ses_test"])
   })
 
+  //#given PreCompact already contributed context before the OMO injector
+  //#when compacting handler is invoked
+  //#then OpenCode receives one replacement prompt containing both contexts
+  it("replaces the native prompt while retaining prior compaction context", async () => {
+    const handler = createSessionCompactingHandler({
+      compactionContextInjector: {
+        inject: mock(() => "omo-context"),
+      },
+      claudeCodeHooks: {
+        "experimental.session.compacting": async (_input, output) => {
+          output.prompt = "custom-context"
+          output.context.push("precompact-context")
+        },
+      },
+    })
+
+    const output = { context: [] as string[], prompt: undefined as string | undefined }
+    await handler({ sessionID: "ses_prompt_override" }, output)
+
+    expect(output.context).toEqual(["precompact-context", "omo-context"])
+    expect(output.prompt).toBe("custom-context\n\nprecompact-context\n\nomo-context")
+  })
+
   //#given claudeCodeHooks injects context during PreCompact
   //#when compacting handler is invoked
   //#then injected context from PreCompact is preserved in output

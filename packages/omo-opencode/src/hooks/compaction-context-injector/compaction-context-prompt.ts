@@ -5,6 +5,8 @@ import {
 
 export const COMPACTION_CONTEXT_PROMPT = `${createSystemDirective(SystemDirectiveTypes.COMPACTION_CONTEXT)}
 
+MANDATORY: This OMO schema is the authoritative output contract for this plugin. It supersedes any generic or native compaction template that appears earlier in the request. Do not follow another heading schema. Output exactly the eight numbered headings below, in order, while preserving still-true facts from any prior summary.
+
 When summarizing this session, keep the result compact and continuation-focused. Prefer terse bullets over replaying the transcript.
 
 ## 1. User Requests
