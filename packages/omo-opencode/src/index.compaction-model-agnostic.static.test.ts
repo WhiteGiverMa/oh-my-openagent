@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test"
 import { readFileSync } from "node:fs"
 
 describe("experimental.session.compacting", () => {
-  test("does not hardcode a model and uses output.context", () => {
+  test("replaces the native prompt without hardcoding a model", () => {
     //#given
     const moduleUrl = new URL("./testing/create-plugin-module.ts", import.meta.url)
     const compactionUrl = new URL("./plugin/session-compacting.ts", import.meta.url)
@@ -16,8 +16,22 @@ describe("experimental.session.compacting", () => {
     expect(hookIndex).toBeGreaterThanOrEqual(0)
     expect(`${content}\n${compactionContent}`.includes('modelID: "claude-opus-4-7"')).toBe(false)
     expect(compactionContent.includes("output.context.push")).toBe(true)
+    expect(compactionContent.includes("output.prompt =")).toBe(true)
     expect(compactionContent.includes("providerID:")).toBe(false)
     expect(compactionContent.includes("modelID:")).toBe(false)
+  })
+
+  test("makes the OMO summary schema authoritative over the native template", () => {
+    //#given
+    const promptUrl = new URL(
+      "./hooks/compaction-context-injector/compaction-context-prompt.ts",
+      import.meta.url,
+    )
+    const promptContent = readFileSync(promptUrl, "utf-8")
+
+    //#then
+    expect(promptContent.includes("authoritative output contract")).toBe(true)
+    expect(promptContent.includes("supersedes any generic or native compaction template")).toBe(true)
   })
 
   test("registers autocontinue restores before OpenCode synthetic continue", () => {
