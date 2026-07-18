@@ -119,6 +119,23 @@ describe("team-registry validator", () => {
     expect(act).not.toThrow()
   })
 
+  test("accepts meidocho subagent members with Hephaestus-equivalent eligibility", () => {
+    // given
+    const member: Member = {
+      kind: "subagent_type",
+      name: "maid-chief",
+      subagent_type: "meidocho",
+      backendType: "in-process",
+      isActive: true,
+    }
+
+    // when
+    const act = () => validateMemberEligibility(member)
+
+    // then
+    expect(act).not.toThrow()
+  })
+
   test("rejects leadAgentId values that do not match a member name", () => {
     // given
     const teamSpec = { ...createBaseTeamSpec(), leadAgentId: "ghost" }

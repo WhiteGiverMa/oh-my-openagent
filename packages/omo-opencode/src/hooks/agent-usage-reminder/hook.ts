@@ -39,6 +39,7 @@ const ORCHESTRATOR_AGENTS = new Set([
   "sisyphus-junior",
   "atlas",
   "hephaestus",
+  "meidocho",
   "prometheus",
 ]);
 

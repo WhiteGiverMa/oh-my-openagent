@@ -45,6 +45,21 @@ function denyTaskForAgent(
   agent.permission = { ...agent.permission, task: "deny" };
 }
 
+function applyDeepWorkerPermissions(
+  agent: AgentWithPermission,
+  questionPermission: string,
+  denyTodoTools: Record<string, unknown>,
+): void {
+  agent.permission = {
+    ...agent.permission,
+    call_omo_agent: "deny",
+    task: "allow",
+    question: questionPermission,
+    teammate: "allow",
+    ...denyTodoTools,
+  };
+}
+
 export function applyToolConfig(params: {
   config: Record<string, unknown>;
   pluginConfig: OhMyOpenCodeConfig;
@@ -118,28 +133,11 @@ export function applyToolConfig(params: {
       ...denyTodoTools,
     };
   }
-  const hephaestus = agentByKey(params.agentResult, "hephaestus", params.pluginConfig);
-  if (hephaestus) {
-    hephaestus.permission = {
-      ...hephaestus.permission,
-      call_omo_agent: "deny",
-      task: "allow",
-      question: questionPermission,
-      teammate: "allow",
-      ...denyTodoTools,
-    };
-  }
-  const meidocho = agentByKey(params.agentResult, "meidocho", params.pluginConfig);
-  if (meidocho) {
-    meidocho.permission = {
-      ...meidocho.permission,
-      call_omo_agent: "deny",
-      task: "allow",
-      question: questionPermission,
-      "task_*": "allow",
-      teammate: "allow",
-      ...denyTodoTools,
-    };
+  for (const agentKey of ["hephaestus", "meidocho"] as const) {
+    const deepWorker = agentByKey(params.agentResult, agentKey, params.pluginConfig);
+    if (deepWorker) {
+      applyDeepWorkerPermissions(deepWorker, questionPermission, denyTodoTools);
+    }
   }
   const prometheus = agentByKey(params.agentResult, "prometheus", params.pluginConfig);
   if (prometheus) {
