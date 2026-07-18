@@ -108,4 +108,19 @@ describe("agent-usage-reminder hook", () => {
 
     clearSessionAgent(sessionID);
   });
+
+  test("reminds Meidocho to delegate after direct exploration", async () => {
+    // given
+    const hook = createHook();
+    const sessionID = "agent-usage-meidocho-session";
+    updateSessionAgent(sessionID, "Meidocho - 女仆长♥️");
+    const output = { title: "", output: "result", metadata: {} };
+
+    // when
+    await hook["tool.execute.after"]({ tool: "grep", sessionID, callID: "1" }, output);
+
+    // then
+    expect(output.output).toContain("[Agent Usage Reminder]");
+    clearSessionAgent(sessionID);
+  });
 });
