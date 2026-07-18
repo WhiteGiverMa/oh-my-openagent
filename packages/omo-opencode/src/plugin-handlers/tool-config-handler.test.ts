@@ -304,6 +304,24 @@ describe("applyToolConfig", () => {
       }
       expect(agent.permission.teammate).toBe("allow")
     })
+
+    it("#then should keep Meidocho permissions identical to Hephaestus", () => {
+      // given
+      const params = createParams({ agents: ["hephaestus", "meidocho"] })
+
+      // when
+      applyToolConfig(params)
+
+      // then
+      const hephaestus = params.agentResult.hephaestus as {
+        permission: Record<string, unknown>
+      }
+      const meidocho = params.agentResult.meidocho as {
+        permission: Record<string, unknown>
+      }
+      expect(meidocho.permission).toEqual(hephaestus.permission)
+      expect(meidocho.permission["task_*"]).toBeUndefined()
+    })
   })
 
   describe("#given sisyphus-junior with permission.task=deny from factory", () => {
