@@ -35,6 +35,20 @@ describe("LSP client path confinement", () => {
 		expect(workspace).toBe(realpathSync(root));
 	});
 
+	it("#given a marker above context cwd #when resolving workspace #then marker search does not escape cwd", () => {
+		const parent = tempRoot("lsp-client-wrapper-parent-");
+		const root = join(parent, "project");
+		mkdirSync(join(parent, ".git"), { recursive: true });
+		mkdirSync(root, { recursive: true });
+		writeFileSync(join(root, "file.ts"), "export const value = 1;\n");
+
+		const workspace = runWithRequestContext(createStandaloneMcpRequestContext({ cwd: root }), () =>
+			findWorkspaceRoot("file.ts"),
+		);
+
+		expect(workspace).toBe(realpathSync(root));
+	});
+
 	it("#given an absolute file outside context cwd #when resolving #then rejects before workspace inference", () => {
 		const root = tempRoot("lsp-client-wrapper-cwd-");
 		const outside = tempRoot("lsp-client-wrapper-outside-");

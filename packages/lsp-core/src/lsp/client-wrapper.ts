@@ -32,6 +32,7 @@ export function isDirectoryPath(filePath: string): boolean {
 
 export function findWorkspaceRoot(filePath: string): string {
 	const abs = resolvePathInsideContext(filePath);
+	const contextRoot = contextCwd();
 	let dir = abs;
 
 	if (!isDirectoryPath(dir)) {
@@ -39,7 +40,7 @@ export function findWorkspaceRoot(filePath: string): string {
 	}
 
 	let prevDir = "";
-	while (dir !== prevDir) {
+	while (dir !== prevDir && isPathInside(contextRoot, dir)) {
 		for (const marker of WORKSPACE_MARKERS) {
 			if (existsSync(join(dir, marker))) {
 				return dir;
