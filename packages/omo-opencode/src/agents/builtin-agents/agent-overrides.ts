@@ -3,6 +3,7 @@ import type { AgentOverrideConfig } from "../types"
 import type { CategoryConfig } from "../../config/schema"
 import { deepMerge, migrateAgentConfig } from "../../shared"
 import { resolvePromptAppend } from "./resolve-file-uri"
+import { resolveAgentPromptAppend } from "./resolve-prompt-append"
 
 /**
  * Expands a category reference from an agent override into concrete config properties.
@@ -41,15 +42,27 @@ export function mergeAgentConfig(
   directory?: string
 ): AgentConfig {
   const migratedOverride = migrateAgentConfig(override as Record<string, unknown>) as AgentOverrideConfig
-  const { prompt_append, ...rest } = migratedOverride
+  const {
+    prompt_append,
+    prompt_append_exclude_model_keywords,
+    prompt_append_always,
+    ...rest
+  } = migratedOverride
   const merged = deepMerge(base, rest as Partial<AgentConfig>)
 
   if (merged.prompt && typeof merged.prompt === 'string' && merged.prompt.startsWith('file://')) {
     merged.prompt = resolvePromptAppend(merged.prompt, directory)
   }
 
-  if (prompt_append && merged.prompt) {
-    merged.prompt = merged.prompt + "\n" + resolvePromptAppend(prompt_append, directory)
+  const promptAppend = resolveAgentPromptAppend({
+    model: typeof merged.model === "string" ? merged.model : undefined,
+    promptAppend: prompt_append,
+    promptAppendAlways: prompt_append_always,
+    excludeModelKeywords: prompt_append_exclude_model_keywords,
+    configDir: directory,
+  })
+  if (promptAppend !== undefined && merged.prompt) {
+    merged.prompt = merged.prompt + "\n" + promptAppend
   }
 
   return merged
