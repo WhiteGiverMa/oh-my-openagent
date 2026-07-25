@@ -5,10 +5,10 @@ describe("resolveAgentPromptAppend", () => {
   test("preserves conditional and always source order", () => {
     const result = resolveAgentPromptAppend({
       model: "google/gemini-3.1-pro",
-      promptAppend: ["conditional-one", "conditional-two"],
-      promptAppendAlways: ["always-one", "always-two"],
-      includeModelKeywords: ["gemini"],
-      excludeModelKeywords: ["claude", "gpt"],
+       promptAppend: ["conditional-one", "conditional-two"],
+       promptAppendAlways: ["always-one", "always-two"],
+       includeModelKeywords: ["gemini"],
+       excludeModelKeywords: ["claude", "gpt"],
     })
 
     expect(result).toBe("conditional-one\n\nconditional-two\n\nalways-one\n\nalways-two")
@@ -25,7 +25,7 @@ describe("resolveAgentPromptAppend", () => {
     expect(result).toBe("always")
   })
 
-  test("skips conditional sources when the model ID does not match an include keyword", () => {
+ test("skips conditional sources when the model ID does not match an include keyword", () => {
     const result = resolveAgentPromptAppend({
       model: "openai/gpt-5.6-sol",
       promptAppend: "conditional",
@@ -36,7 +36,7 @@ describe("resolveAgentPromptAppend", () => {
     expect(result).toBe("always")
   })
 
-  test("gives exclusions precedence when include and exclude keywords both match", () => {
+ test("gives exclusions precedence when include and exclude keywords both match", () => {
     const result = resolveAgentPromptAppend({
       model: "openai/gpt-5.6-sol",
       promptAppend: "conditional",
