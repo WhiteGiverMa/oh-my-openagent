@@ -57,10 +57,10 @@ export function mergeAgentConfig(
 
   const promptAppend = resolveAgentPromptAppend({
     model: typeof merged.model === "string" ? merged.model : undefined,
-    promptAppend: prompt_append,
-    promptAppendAlways: prompt_append_always,
-    includeModelKeywords: prompt_append_include_model_keywords,
-    excludeModelKeywords: prompt_append_exclude_model_keywords,
+      promptAppend: prompt_append,
+      promptAppendAlways: prompt_append_always,
+      includeModelKeywords: prompt_append_include_model_keywords,
+      excludeModelKeywords: prompt_append_exclude_model_keywords,
     configDir: directory,
   })
   if (promptAppend !== undefined && merged.prompt) {
