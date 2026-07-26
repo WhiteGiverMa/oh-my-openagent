@@ -1,0 +1,11 @@
+full_suite=12275 passed, 3 skipped, 0 failed, 38208 assertions
+typecheck=passed
+build=passed
+opencode_common_self_check=passed
+opencode_tui_smoke=passed, host_session_count=102 unchanged
+live_plugin_cli=passed, meidocho selected, fake response TUI_NOREG_OK
+live_plugin_server=passed, /agent contained meidocho
+server_smoke_helper=timed out under installed opencode 1.18.5; not counted as pass
+sse_hook_helper=timed out under installed opencode 1.18.5; not counted as pass
+serve_wake_split_helper=timed out during self-test; not counted as pass
+cleanup=isolated XDG roots, fake provider, server, curl watcher, and tmux session removed

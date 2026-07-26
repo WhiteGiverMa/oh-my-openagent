@@ -1,0 +1,7 @@
+server_ready=1 version=1.18.5
+registered_agents=Atlas - Plan Executor,Hephaestus - Deep Agent,Meidocho - 女仆长♥️,Metis - Plan Consultant,Momus - Plan Critic,Prometheus - Plan Builder,Sisyphus - ultraworker,Sisyphus-Junior,build,compaction,explore,general,librarian,multimodal-looker,oracle,plan,summary,title
+PASS meidocho_registered
+host_session_count_before=102 after=102
+PASS host_db_untouched
+isolated_xdg_root=/tmp/omo-v4192-server-qa.SSfnTD (removed on exit)
+secrets_omitted=true

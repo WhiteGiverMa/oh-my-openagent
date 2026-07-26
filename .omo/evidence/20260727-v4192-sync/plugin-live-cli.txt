@@ -1,0 +1,8 @@
+PASS fake_model_ready port=45573
+PASS opencode_run_exit
+PASS fake_response_observed=TUI_NOREG_OK
+PASS fake_model_received_request
+host_session_count_before=102 after=102
+PASS host_db_untouched
+isolated_xdg_root=/tmp/omo-v4192-live-qa.qa7cFH (removed on exit)
+secrets_omitted=true

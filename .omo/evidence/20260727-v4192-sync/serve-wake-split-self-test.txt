@@ -1,0 +1,6 @@
+[swsp] running self-test...
+[swsp] fake-openai listening on port 45497
+[swsp] fake-LLM started on port 45497
+[swsp] PASS: fake-LLM /health 200
+[swsp] PASS: missing --expect operand fails with usage error
+[swsp] PASS: missing --evidence-dir operand fails with usage error

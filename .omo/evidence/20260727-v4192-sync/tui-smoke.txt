@@ -1,0 +1,5 @@
+PASS: TUI rendered under tmux (marker found; version 1.18.5)
+WARN: sentinel not visible (TUI may have remapped input); render still proven
+PASS: tmux session torn down (has-session false)
+PASS: real DB untouched (session count 102 unchanged)
+PASS: tui-smoke
