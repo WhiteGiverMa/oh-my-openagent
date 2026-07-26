@@ -1,0 +1,10 @@
+windows_worktree_head=adad0632d94a7929f6c3de44744729ab76b217f1
+server_ready=1 version=1.18.5
+windows_registered_agents=Atlas - Plan Executor,Hephaestus - Deep Agent,Meidocho - 女仆长♥️,Metis - Plan Consultant,Momus - Plan Critic,Prometheus - Plan Builder,Sisyphus - ultraworker,Sisyphus-Junior,build,compaction,explore,general,librarian,multimodal-looker,oracle,plan,summary,title
+PASS windows_meidocho_registered
+host_session_count_before=102 after=102
+PASS host_db_untouched
+windows_dist_hash=d23cf219f03dd4ef2f86baae3aaeb63a1858cabd8157c8be2cf74629294d48a4
+windows_skills_count=16
+windows_omo_extension_hash=51236603ba62c12dff0e6c2e9204484b39576dc985bff01b26e52d29d6a44f66
+secrets_omitted=true
