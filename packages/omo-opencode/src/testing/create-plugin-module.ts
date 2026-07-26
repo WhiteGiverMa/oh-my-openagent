@@ -14,11 +14,13 @@ import { createPluginDispose } from "../plugin-dispose"
 import { createPluginInterface } from "../plugin-interface"
 import { loadPluginConfig } from "../plugin-config"
 import { createModelCacheState } from "../plugin-state"
+import { createRuntimePromptAppendRegistry } from "../agents/runtime-prompt-append-reconciler"
 import {
   createCompactionAutocontinueHandler,
   createSessionCompactingHandler,
   type CompactionAutocontinueHook,
 } from "../plugin/session-compacting"
+import { createCompactionRequestTracker } from "../plugin/compaction-request-tracker"
 import { installAgentSortShim, setAgentSortOrder } from "../shared/agent-sort-shim"
 import {
   detectDuplicateOmoPlugin,
@@ -284,6 +286,8 @@ export function createPluginModule(overrides: Partial<PluginModuleDeps> = {}): P
     const tmuxConfig = deps.createRuntimeTmuxConfig(pluginConfig)
 
     const modelCacheState = deps.createModelCacheState()
+    const runtimePromptAppendRegistry = createRuntimePromptAppendRegistry()
+    const compactionRequestTracker = createCompactionRequestTracker()
 
     const managers = deps.createManagers({
       ctx: input,
@@ -292,6 +296,13 @@ export function createPluginModule(overrides: Partial<PluginModuleDeps> = {}): P
       modelCacheState,
       backgroundNotificationHookEnabled: isHookEnabled("background-notification"),
       runtimeSkillSourceUrl: runtimeSkillSource?.url,
+      configureRuntimePromptAppends: (agentConfigs) => {
+        runtimePromptAppendRegistry.configure({
+          agentConfigs,
+          agentOverrides: pluginConfig.agents,
+          directory: input.directory,
+        })
+      },
     })
 
     const toolsResult = await deps.createTools({
@@ -320,6 +331,9 @@ export function createPluginModule(overrides: Partial<PluginModuleDeps> = {}): P
       managers,
       hooks,
       tools: toolsResult.filteredTools,
+      reconcileRuntimePromptAppend: runtimePromptAppendRegistry.reconcile,
+      isCompactionRequest: compactionRequestTracker.isActive,
+      clearCompactionRequest: compactionRequestTracker.clear,
     })
 
     const dispose = createPluginDispose({
@@ -331,9 +345,13 @@ export function createPluginModule(overrides: Partial<PluginModuleDeps> = {}): P
     const pluginHooks: HooksWithRuntimeLifecycle = {
       ...pluginInterface,
 
-      "experimental.session.compacting": createSessionCompactingHandler(hooks),
+      "experimental.session.compacting": createSessionCompactingHandler(hooks, {
+        markCompactionRequest: compactionRequestTracker.mark,
+      }),
 
-      "experimental.compaction.autocontinue": createCompactionAutocontinueHandler(hooks),
+      "experimental.compaction.autocontinue": createCompactionAutocontinueHandler(hooks, {
+        clearCompactionRequest: compactionRequestTracker.clear,
+      }),
 
       dispose: async (): Promise<void> => {
         runtimeSkillSource?.stop()
