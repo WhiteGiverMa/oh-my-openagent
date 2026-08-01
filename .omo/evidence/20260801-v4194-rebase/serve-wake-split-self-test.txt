@@ -1,0 +1,23 @@
+[swsp] running self-test...
+[swsp] fake-openai listening on port 46325
+[swsp] fake-LLM started on port 46325
+[swsp] PASS: fake-LLM /health 200
+[swsp] PASS: missing --expect operand fails with usage error
+[swsp] PASS: missing --evidence-dir operand fails with usage error
+[swsp] PASS: opencode serve started at http://127.0.0.1:46339
+[swsp] PASS: /global/health 200
+[swsp] wrote merged OMO_SANDBOX_OMO_CONFIG to /tmp/oqa-xdg.Jj7mlp/config/opencode/oh-my-openagent.json
+[swsp] PASS: OMO_SANDBOX_OMO_CONFIG merge assertion (env key + base overrides both present)
+[swsp] PASS: live dispatch detection is scoped to the probe session
+[swsp] PASS: reproduced branch guard accepts mechanism-only evidence
+[swsp] PASS: fixed topology accepts scoped live dispatch plus deterministic DB/provider evidence
+[swsp] PASS: fixed topology rejects missing scoped live dispatch
+[swsp] PASS: fixed topology rejects malformed numeric evidence
+[swsp] PASS: fixed topology rejects duplicate terminal stop
+[swsp] PASS: stale log offset does not persist unrelated route provenance
+[swsp] PASS: route provenance artifact excludes unrelated sessions
+[swsp] PASS: route provenance waits for delayed session dispatch
+[swsp] PASS: fake-openai server process stopped
+SELF-TEST OK
+
+exit_code=0

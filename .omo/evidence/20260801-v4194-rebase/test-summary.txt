@@ -1,0 +1,10 @@
+Build and test summary
+
+bun install --frozen-lockfile: exit 0
+bun run build: exit 0
+bun run typecheck: exit 0
+bun test before rebuild: 5 failures caused by stale generated artifacts; raw output remains local as full-tests.txt
+bun test after rebuild: 12710 pass, 3 skip, 0 fail; raw output remains local as full-tests-after-build.txt
+bun run test:codex: exit 0; 78 pass, then 393 pass / 1 skip / 0 fail across the Codex gates
+
+The failing pre-build run was not hidden or deleted. Rebuilding the generated artifacts removed those failures, and the complete post-build suite was rerun.

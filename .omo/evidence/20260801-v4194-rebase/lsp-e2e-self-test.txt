@@ -1,0 +1,3 @@
+{"result":"PASS","selfTest":true,"malformedArgsRejected":true,"fakePassRejected":true,"skipRejected":true,"hungCommandBounded":true,"healthTimeoutReadinessBounded":true,"sseStartupRetryDeterministic":true,"partialStagingCleanedTwice":true,"interruptCleanupRepeated":true,"qaDependenciesPortable":true,"cancellationResultFieldsMandatory":true,"clientPackageResultFieldsMandatory":true,"dirtyWorktreePreserved":true,"realHomesUnchanged":true}
+
+exit_code=0

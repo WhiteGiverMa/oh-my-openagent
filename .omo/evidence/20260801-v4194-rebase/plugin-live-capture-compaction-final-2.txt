@@ -1,0 +1,4 @@
+COMPACTION_OK request=/home/celestia/dev/projects/oh-my-openagent/.omo/evidence/20260801-v4194-rebase/requests/request-2.json status=200
+CAPTURE_OK request=/home/celestia/dev/projects/oh-my-openagent/.omo/evidence/20260801-v4194-rebase/requests/request-1.json
+
+exit_code=0

@@ -1,0 +1,5 @@
+real_db=/home/celestia/.local/share/opencode/opencode.db before=166 after=166 unchanged=yes
+sandbox_root=/tmp/oqa-xdg.T6zLfI
+session_id=ses_0423836c0ffemAVQSK3rzt4NIz
+provider_port=45219
+server_port=48075

@@ -1,0 +1,9 @@
+commit=9a4e95896ac1739dfb97709221347da4f476be7c
+dist_index_sha256=0e781d7c4bf7ebf9ba1cd792afe4201077db574b684fa635221945ecc18c2591
+dist_index_bytes=6808290
+dist_skill_files=278
+dist_files=1959
+node_exports=default,omoPlugin
+typecheck_exit=0
+full_tests_exit=1
+build_exit=0

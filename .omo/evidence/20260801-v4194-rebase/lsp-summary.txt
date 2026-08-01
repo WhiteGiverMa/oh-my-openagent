@@ -1,0 +1,13 @@
+LSP and live-surface summary
+
+OpenCode common harness self-check: pass
+Server smoke: health pass, documentation route count pass, unauthenticated request returned 401
+SSE hook probe: pass
+Serve wake-split self-test: pass
+TUI smoke: pass; real DB session count unchanged at 166
+LSP self-test: pass
+LSP diagnostics scenario: exit 0
+Live normal control capture: pass
+Live compaction capture: HTTP 200; expected eight numbered headings observed
+
+Raw LSP diagnostic logs and request captures remain local-only where terminal whitespace or request payloads would make committed evidence noisy or sensitive.

@@ -1,0 +1,18 @@
+Rebase conflict record
+
+Base: upstream v4.19.4 (b072d279110bdda2c6ac2525d0d24dc54d16148a)
+Result: fix/hybrid-v4.19.1 at 9a4e95896ac1739dfb97709221347da4f476be7c
+
+1. packages/omo-opencode/src/plugin-handlers/prometheus-agent-config-builder.ts
+   Conflict came from commit 575d5c145. Kept the fork's prompt-append resolver and typed it through AgentOverrideConfig, preserving the upstream reasoning-related fields instead of dropping either side.
+
+2. Generated Codex/Senpi artifacts from commit adad0632d
+   Conflicts were in packages/omo-codex/plugin/components/codegraph/dist/cli.js,
+   packages/omo-codex/scripts/install-dist/install-local.mjs,
+   packages/omo-senpi/plugin/extensions/omo-member.js, and omo.js.
+   Accepted the v4.19.4 upstream generated versions, retained the fork source/tests/evidence, and regenerated them with the current build.
+
+3. packages/omo-senpi/plugin/extensions/omo.js from ec334f43d
+   Kept the fork's script/build.ts zod bundling fix and accepted the upstream generated bundle. The final bundle was regenerated after the rebase.
+
+No conflict was resolved by weakening a test or deleting a failing test.
