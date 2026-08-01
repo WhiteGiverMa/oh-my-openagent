@@ -34,5 +34,5 @@ The build and type gates cover the generated bundle and package graph. The full 
 - `server-smoke.txt`, `sse-hook-probe.txt`, `serve-wake-split-self-test.txt`, `tui-smoke.txt`
 - `lsp-e2e-self-test.txt`, `lsp-summary.txt`
 - `plugin-live-capture-compaction-final-2.txt`, `plugin-live-normal-control.txt`, `isolation-receipt.txt`
-- `wsl-build-artifacts.txt`
+- `wsl-build-artifacts.txt`, `runtime-reload.txt`
 - `rebase-conflicts.txt`

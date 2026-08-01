@@ -1,0 +1,9 @@
+Runtime reload receipt
+
+WSL opencode-serve.service: active
+WSL MainPID after the requested reload: 148895
+WSL ActiveEnterTimestamp: Sat 2026-08-01 23:02:58 CST
+WSL unauthenticated /global/health request: HTTP 401, expected because server authentication is enabled
+Windows native opencode agent list: pass; Meidocho was present
+
+No further service restart was performed after this receipt was captured.
