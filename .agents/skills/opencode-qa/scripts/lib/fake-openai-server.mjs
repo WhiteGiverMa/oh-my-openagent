@@ -83,7 +83,7 @@ const server = http.createServer(async (req, res) => {
   if (branch === "parent-hold") {
     latches.parentHoldIssued = true
     sendSse(res, toolCallEvents(callCount, "bash", `call_bash_${callCount}`, {
-      command: "node -e \"setTimeout(() => {}, 8000)\"",
+      command: "i=0; while [ $i -lt 8 ]; do i=$((i+1)); sleep 1; done",
       description: "hold turn",
     }))
     return
