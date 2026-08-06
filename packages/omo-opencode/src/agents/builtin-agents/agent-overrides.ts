@@ -22,6 +22,7 @@ export function applyCategoryOverride(
   const result = { ...config } as AgentConfig & Record<string, unknown>
   if (categoryConfig.model) result.model = categoryConfig.model
   if (categoryConfig.variant !== undefined) result.variant = categoryConfig.variant
+  if (categoryConfig.reasoning !== undefined) result.variant = categoryConfig.reasoning
   if (categoryConfig.temperature !== undefined) result.temperature = categoryConfig.temperature
   if (categoryConfig.reasoningEffort !== undefined) result.reasoningEffort = categoryConfig.reasoningEffort
   if (categoryConfig.textVerbosity !== undefined) result.textVerbosity = categoryConfig.textVerbosity
@@ -47,9 +48,18 @@ export function mergeAgentConfig(
     prompt_append_include_model_keywords,
     prompt_append_exclude_model_keywords,
     prompt_append_always,
+    reasoning,
     ...rest
   } = migratedOverride
   const merged = deepMerge(base, rest as Partial<AgentConfig>)
+
+  // Lower canonical `reasoning` to OpenCode's `variant` at build time so that
+  // the TUI status bar and OpenCode's pre-hook provider-option construction
+  // see the correct value. `reasoning` takes precedence over the deprecated
+  // `variant` and `reasoningEffort`, matching resolveAgentVariant precedence.
+  if (reasoning !== undefined) {
+    merged.variant = reasoning
+  }
 
   if (merged.prompt && typeof merged.prompt === 'string' && merged.prompt.startsWith('file://')) {
     merged.prompt = resolvePromptAppend(merged.prompt, directory)
