@@ -15,6 +15,7 @@ export function createSystemTransformHandler(
     getSessionAgent?: (sessionID: string) => string | undefined
     isCompactionRequest?: (sessionID: string) => boolean
   },
+  directory?: string,
 ): (
   input: { sessionID?: string; model: { id: string; providerID: string; [key: string]: unknown } },
   output: { system: string[] },
@@ -45,10 +46,11 @@ export function createSystemTransformHandler(
     // Meidocho prompt_template hot-reload: the chat.message gate refreshed the
     // rendered body on mtime change; swap the freshly rendered body into the
     // baked system prompt here (sisyphus reconciler pattern). Inert unless the
-    // session agent is meidocho AND prompt_template is configured.
+    // session agent is meidocho AND prompt_template is configured. The state is
+    // scoped to this instance's directory (per-directory plugin instances).
     const meidochoSessionAgent = input.sessionID ? resolveSessionAgent(input.sessionID) : undefined
     if (meidochoSessionAgent && getAgentConfigKey(meidochoSessionAgent) === "meidocho") {
-      reconcileMeidochoPromptTemplate(output.system)
+      reconcileMeidochoPromptTemplate(directory, output.system)
     }
 
     if (!defaultMode?.ultrawork || !getUltraworkMessage) return

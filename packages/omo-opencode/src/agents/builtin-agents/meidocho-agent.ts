@@ -102,7 +102,7 @@ export function maybeCreateMeidochoConfig(input: {
       useTaskSystem,
       meidochoModel,
     )
-    const runtimeResult = configureMeidochoRuntimeTemplate({
+    const runtimeResult = configureMeidochoRuntimeTemplate(directory, {
       templateContent: resolved.ok
         ? { filePath: resolved.filePath, content: resolved.content }
         : undefined,

@@ -31,7 +31,19 @@ type MeidochoRuntimeTemplateState =
   | ActiveState
   | InvalidState
 
-let state: MeidochoRuntimeTemplateState = { kind: "disabled" }
+// OpenCode serve 在同一进程内为每个 directory（项目）创建一个 plugin instance，
+// 各 instance 的 resolvers 依赖项目级 skills/categories，同一 md 的渲染结果因
+// instance 而异。模块级单例会被最后初始化的 instance 覆盖，导致其他 instance
+// 的 reconcile 锚点失配、refresh 错用 resolvers——状态必须按 directory 隔离。
+const states = new Map<string, MeidochoRuntimeTemplateState>()
+
+function stateKey(directory: string | undefined): string {
+  return directory ?? ""
+}
+
+function getState(directory: string | undefined): MeidochoRuntimeTemplateState {
+  return states.get(stateKey(directory)) ?? { kind: "disabled" }
+}
 
 export type ConfigureMeidochoRuntimeTemplateInput = {
   readonly templateContent?: {
@@ -49,23 +61,26 @@ export type ConfigureMeidochoRuntimeTemplateResult =
   | { readonly kind: "invalid"; readonly prompt: string; readonly errorReport: string }
 
 export function configureMeidochoRuntimeTemplate(
+  directory: string | undefined,
   input: ConfigureMeidochoRuntimeTemplateInput,
 ): ConfigureMeidochoRuntimeTemplateResult {
+  const key = stateKey(directory)
+
   if (!input.templateContent && !input.loadFailureReason) {
-    state = { kind: "disabled" }
+    states.delete(key)
     return { kind: "disabled" }
   }
 
   if (input.loadFailureReason || !input.templateContent) {
     const errorReport = buildLoadFailureReport(input.loadFailureReason ?? "模板内容缺失")
-    state = {
+    states.set(key, {
       kind: "invalid",
       filePath: input.templateContent?.filePath ?? "",
       mtimeMs: 0,
       errorReport,
       registrationRendered: input.bundledRendered,
       resolvers: input.resolvers,
-    }
+    })
     return { kind: "invalid", prompt: input.bundledRendered, errorReport }
   }
 
@@ -75,26 +90,26 @@ export function configureMeidochoRuntimeTemplate(
 
   if (!validation.ok) {
     const errorReport = buildMeidochoTemplateErrorReport({ issues: validation.issues, filePath })
-    state = {
+    states.set(key, {
       kind: "invalid",
       filePath,
       mtimeMs,
       errorReport,
       registrationRendered: input.bundledRendered,
       resolvers: input.resolvers,
-    }
+    })
     return { kind: "invalid", prompt: input.bundledRendered, errorReport }
   }
 
   const rendered = renderMeidochoTemplate(content, input.resolvers)
-  state = {
+  states.set(key, {
     kind: "active",
     filePath,
     mtimeMs,
     rendered,
     registrationRendered: rendered,
     resolvers: input.resolvers,
-  }
+  })
   return { kind: "active", prompt: rendered }
 }
 
@@ -163,17 +178,23 @@ function refresh(current: ActiveState | InvalidState): ActiveState | InvalidStat
   }
 }
 
-export function assertMeidochoPromptTemplateUsable(): void {
-  if (state.kind === "disabled") return
-  state = refresh(state)
-  if (state.kind === "invalid") {
-    throw new Error(state.errorReport)
+export function assertMeidochoPromptTemplateUsable(directory: string | undefined): void {
+  const current = getState(directory)
+  if (current.kind === "disabled") return
+  const next = refresh(current)
+  states.set(stateKey(directory), next)
+  if (next.kind === "invalid") {
+    throw new Error(next.errorReport)
   }
 }
 
-export function reconcileMeidochoPromptTemplate(system: string[]): boolean {
-  if (state.kind !== "active") return false
-  const active = state
+export function reconcileMeidochoPromptTemplate(
+  directory: string | undefined,
+  system: string[],
+): boolean {
+  const current = getState(directory)
+  if (current.kind !== "active") return false
+  const active = current
   if (active.rendered === active.registrationRendered) return false
 
   // OpenCode core rebuilds the system array from the ORIGINAL registered prompt
@@ -189,10 +210,12 @@ export function reconcileMeidochoPromptTemplate(system: string[]): boolean {
   return swapped
 }
 
-export function getMeidochoRuntimeTemplateState(): MeidochoRuntimeTemplateState {
-  return state
+export function getMeidochoRuntimeTemplateState(
+  directory?: string,
+): MeidochoRuntimeTemplateState {
+  return getState(directory)
 }
 
 export function resetMeidochoRuntimeTemplate(): void {
-  state = { kind: "disabled" }
+  states.clear()
 }

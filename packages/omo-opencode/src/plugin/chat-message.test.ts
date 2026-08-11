@@ -1023,7 +1023,7 @@ describe("createChatMessageHandler - meidocho prompt_template gate", () => {
   }
 
   function configureInvalidTemplate(): void {
-    configureMeidochoRuntimeTemplate({
+    configureMeidochoRuntimeTemplate(undefined, {
       loadFailureReason: "Template file not found: /qa-missing.md",
       resolvers: slotResolvers,
       bundledRendered: "BUNDLED",
