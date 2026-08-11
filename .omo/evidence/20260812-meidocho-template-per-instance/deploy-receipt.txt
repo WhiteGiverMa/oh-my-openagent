@@ -1,0 +1,28 @@
+Meidocho prompt_template per-directory 修复 — 部署凭证（重启由主人执行）
+
+源码：
+  分支 fix/hybrid-v4.19.1-without-pr-6160
+  修复 commit 546e6f7eb（7 源文件）
+  merge commit ae43c09b0（--no-ff 合回生产分支）
+  worktree ../oh-my-openagent-wt/fix/meidocho-template-per-instance（已合并，待清理）
+
+备份（构建前双端 SHA 均为 ba1f9bc3，见 pre-deploy-sha256.txt）：
+  /home/celestia/dev/projects/oh-my-openagent-build-backups/20260812-pre-meidocho-per-instance/{wsl,windows}/index.js
+
+构建：主 checkout bun run build 全步骤通过（未跳过 materialize；主 checkout submodule 完好）
+新 dist SHA-256（双端一致）：
+  81ce72c60cbaacf592ecbf688033584033269e926b888cc1ba7ade833f8d86ef
+
+双端同步：
+  cp -f dist/index.js → /mnt/g/dev/oh-my-openagent/dist/index.js
+  cp -rf dist/skills/* → /mnt/g/dev/oh-my-openagent/dist/skills/
+  同步后两端 sha256sum 输出一致（上记 SHA）
+
+QA（本目录 drive-qa.sh）：
+  EXPECT=reproduced + 旧 dist ba1f9bc3 → A 失效/B 正常（bug 复现）
+  EXPECT=fixed      + 新 dist 81ce72c6 → 双 instance 各自热重载成功
+  宿主 DB 275 → 275（零污染）
+
+待主人执行：重启 opencode-serve 与 Windows Desktop 使新 dist 生效。
+  重启后热重载即多 instance 安全：改 ~/.omo/prompts/meidocho.md 保存后，
+  任何项目目录里的女仆长会话下一条消息都拿到新渲染。
