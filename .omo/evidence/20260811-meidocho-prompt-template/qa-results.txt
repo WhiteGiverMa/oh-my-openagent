@@ -1,0 +1,17 @@
+NOTE host session count before: 271
+NOTE capture server on :44627
+NOTE opencode server on :46845 (pid 131426)
+NOTE baseline session: ses_00e867c46ffewZxAb4S3BeU0i4
+PASS D baseline: bundled template reaches the model without prompt_template configured
+NOTE opencode server on :45353 (pid 131647)
+NOTE template session: ses_00e865c97ffej2lNxiaOJn6fAk
+PASS A render: user template marker reaches the model
+PASS A2 hot-reload: edited template v2 reaches the model in the same server process
+PASS A2 hot-reload: stale v1 marker fully replaced
+PASS B block: zero model calls while template invalid
+PASS B block: blocked message was not persisted to the DB
+PASS B block: detailed error report observed on the event stream
+PASS C recover: fixed template (with :omit) works again without restart
+NOTE host session count after: 271
+PASS isolation: host opencode.db session count unchanged (271)
+NOTE ALL SCENARIOS PASSED

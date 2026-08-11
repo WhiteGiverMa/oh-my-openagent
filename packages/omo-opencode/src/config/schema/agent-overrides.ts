@@ -87,6 +87,10 @@ export const AgentOverridesSchema = z.object({
   explore: AgentOverrideConfigSchema.optional(),
   "multimodal-looker": AgentOverrideConfigSchema.optional(),
   atlas: AgentOverrideConfigSchema.optional(),
+  meidocho: AgentOverrideConfigSchema.extend({
+    /** file:// URI of a private prompt template with {{ slot }} markers. Meidocho-only: other agents have no template renderer and silently ignore unknown keys. */
+    prompt_template: z.string().optional(),
+  }).optional(),
 }).catchall(AgentOverrideConfigSchema.optional())
 
 export type AgentOverrideConfig = z.infer<typeof AgentOverrideConfigSchema>

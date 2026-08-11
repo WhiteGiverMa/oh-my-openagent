@@ -20,17 +20,19 @@ function isWithinAllowedPaths(filePath: string, projectRoot: string): boolean {
   return false
 }
 
-export function resolvePromptAppend(promptAppend: string, configDir?: string): string {
-  if (!promptAppend.startsWith("file://")) return promptAppend
+type FileUriPathResolution =
+  | { readonly ok: true; readonly filePath: string }
+  | { readonly ok: false; readonly reason: string }
 
+// ponytail: fileURLToPath correctly handles standard file:/// URIs on Windows
+// (drive letters, separator normalization). Non-standard legacy formats
+// (file://path, file://~/..., file://./relative) fall through to the fallback below.
+function resolveFileUriPath(uri: string, configDir?: string): FileUriPathResolution {
   let filePath: string
   try {
-    // ponytail: fileURLToPath correctly handles standard file:/// URIs on Windows
-    // (drive letters, separator normalization). Non-standard legacy formats
-    // (file://path, file://~/..., file://./relative) fall through to the fallback below.
-    filePath = fileURLToPath(promptAppend)
+    filePath = fileURLToPath(uri)
   } catch {
-    const encoded = promptAppend.slice(7)
+    const encoded = uri.slice(7)
     try {
       const decoded = decodeURIComponent(encoded)
       const expanded = decoded.startsWith("~/") ? decoded.replace(/^~\//, `${homedir()}/`) : decoded
@@ -41,31 +43,69 @@ export function resolvePromptAppend(promptAppend: string, configDir?: string): s
       if (!(error instanceof Error)) {
         throw error
       }
-      return `[WARNING: Malformed file URI (invalid percent-encoding): ${promptAppend}]`
+      return { ok: false, reason: `Malformed file URI (invalid percent-encoding): ${uri}` }
     }
   }
 
   const projectRoot = configDir ?? process.cwd()
   if (!isWithinAllowedPaths(filePath, projectRoot)) {
     log("[resolve-file-uri] Rejected file URI outside allowed paths", {
-      promptAppend,
+      promptAppend: uri,
       filePath,
       projectRoot,
       allowedHomeSubdirs: [...ALLOWED_HOME_SUBDIRS],
     })
-    return `[WARNING: Path rejected: ${promptAppend} (resolved outside project root ${projectRoot} and allowed home directories; file:// prompts must reside within the project directory, ~/.config/opencode/, ~/.config/oh-my-openagent/, ~/.omo/, or ~/.opencode/)]`
+    return {
+      ok: false,
+      reason: `Path rejected: ${uri} (resolved outside project root ${projectRoot} and allowed home directories; file:// prompts must reside within the project directory, ~/.config/opencode/, ~/.config/oh-my-openagent/, ~/.omo/, or ~/.opencode/)`,
+    }
   }
 
-  if (!existsSync(filePath)) {
+  return { ok: true, filePath }
+}
+
+export function resolvePromptAppend(promptAppend: string, configDir?: string): string {
+  if (!promptAppend.startsWith("file://")) return promptAppend
+
+  const pathResolution = resolveFileUriPath(promptAppend, configDir)
+  if (!pathResolution.ok) return `[WARNING: ${pathResolution.reason}]`
+
+  if (!existsSync(pathResolution.filePath)) {
     return `[WARNING: Could not resolve file URI: ${promptAppend}]`
   }
 
   try {
-    return readFileSync(filePath, "utf8")
+    return readFileSync(pathResolution.filePath, "utf8")
   } catch (error) {
     if (!(error instanceof Error)) {
       throw error
     }
     return `[WARNING: Could not read file: ${promptAppend}]`
+  }
+}
+
+export type PromptTemplateFileResolution =
+  | { readonly ok: true; readonly filePath: string; readonly content: string }
+  | { readonly ok: false; readonly reason: string }
+
+export function resolvePromptTemplateFile(uri: string, configDir?: string): PromptTemplateFileResolution {
+  if (!uri.startsWith("file://")) {
+    return { ok: false, reason: `prompt_template must be a file:// URI, got: ${uri}` }
+  }
+
+  const pathResolution = resolveFileUriPath(uri, configDir)
+  if (!pathResolution.ok) return { ok: false, reason: pathResolution.reason }
+
+  if (!existsSync(pathResolution.filePath)) {
+    return { ok: false, reason: `Template file not found: ${pathResolution.filePath}` }
+  }
+
+  try {
+    return { ok: true, filePath: pathResolution.filePath, content: readFileSync(pathResolution.filePath, "utf8") }
+  } catch (error) {
+    if (!(error instanceof Error)) {
+      throw error
+    }
+    return { ok: false, reason: `Could not read template file: ${pathResolution.filePath}` }
   }
 }

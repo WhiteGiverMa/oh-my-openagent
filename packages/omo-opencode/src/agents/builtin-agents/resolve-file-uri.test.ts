@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, test } from "bun:test"
 import { mkdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs"
 import { homedir, tmpdir } from "node:os"
 import { join } from "node:path"
-import { resolvePromptAppend } from "./resolve-file-uri"
+import { resolvePromptAppend, resolvePromptTemplateFile } from "./resolve-file-uri"
 
 describe("resolvePromptAppend", () => {
   const fixtureRoot = join(tmpdir(), `resolve-file-uri-${Date.now()}`)
@@ -164,5 +164,51 @@ describe("resolvePromptAppend", () => {
     //#then
     expect(resolved).toContain("[WARNING: Path rejected:")
     expect(resolved).not.toContain("secret-content")
+  })
+})
+
+describe("resolvePromptTemplateFile", () => {
+  const fixtureRoot = join(tmpdir(), `resolve-template-file-${Date.now()}`)
+  const configDir = join(fixtureRoot, "config")
+  const templatePath = join(configDir, "template.md")
+
+  beforeAll(() => {
+    mkdirSync(configDir, { recursive: true })
+    writeFileSync(templatePath, "{{ taskSystemGuide }}", "utf8")
+  })
+
+  afterAll(() => {
+    rmSync(fixtureRoot, { recursive: true, force: true })
+  })
+
+  test("#given 合法 file URI #when 解析 #then 返回路径与内容", () => {
+    const resolved = resolvePromptTemplateFile(`file://${templatePath}`, configDir)
+    expect(resolved.ok).toBe(true)
+    if (!resolved.ok) return
+    expect(resolved.filePath).toBe(templatePath)
+    expect(resolved.content).toBe("{{ taskSystemGuide }}")
+  })
+
+  test("#given 非 file URI #when 解析 #then 结构化报错", () => {
+    const resolved = resolvePromptTemplateFile("/plain/path.md", configDir)
+    expect(resolved.ok).toBe(false)
+    if (resolved.ok) return
+    expect(resolved.reason).toContain("file://")
+  })
+
+  test("#given 文件不存在 #when 解析 #then 结构化报错含路径", () => {
+    const missing = join(configDir, "missing.md")
+    const resolved = resolvePromptTemplateFile(`file://${missing}`, configDir)
+    expect(resolved.ok).toBe(false)
+    if (resolved.ok) return
+    expect(resolved.reason).toContain("Template file not found")
+    expect(resolved.reason).toContain(missing)
+  })
+
+  test("#given 逃逸路径 #when 解析 #then 结构化报错且不读文件", () => {
+    const resolved = resolvePromptTemplateFile("file:///etc/passwd", configDir)
+    expect(resolved.ok).toBe(false)
+    if (resolved.ok) return
+    expect(resolved.reason).toContain("Path rejected")
   })
 })

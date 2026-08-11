@@ -5,6 +5,7 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { unsafeTestValue } from "../../../../test-support/unsafe-test-value"
 import type { OhMyOpenCodeConfig } from "../config"
+import { configureMeidochoRuntimeTemplate, resetMeidochoRuntimeTemplate } from "../agents/meidocho/runtime-template"
 import { readBoulderState } from "../features/boulder-state"
 import { _resetForTesting, getSessionAgent, registerAgentName, setMainSession, subagentSessions, updateSessionAgent } from "../features/claude-code-session-state"
 import { createAutoSlashCommandHook } from "../hooks/auto-slash-command"
@@ -1004,5 +1005,64 @@ describe("createChatMessageHandler - TUI variant passthrough", () => {
 
     //#then
     expect(getSessionAgent("test-session")).toBe("Hephaestus - Deep Agent")
+  })
+})
+
+describe("createChatMessageHandler - meidocho prompt_template gate", () => {
+  const slotResolvers = {
+    taskSystemGuide: () => "TSG",
+    categorySkillsGuide: () => "CSG",
+    delegationTable: () => "DT",
+    oracleSection: () => "OS",
+    frontendGuidance: () => "FG",
+    fileEditGuidance: () => "FEG",
+  }
+
+  function meidochoOutput(): ChatMessageHandlerOutput {
+    return { message: {}, parts: [{ type: "text", text: "hello" }] }
+  }
+
+  function configureInvalidTemplate(): void {
+    configureMeidochoRuntimeTemplate({
+      loadFailureReason: "Template file not found: /qa-missing.md",
+      resolvers: slotResolvers,
+      bundledRendered: "BUNDLED",
+    })
+  }
+
+  afterEach(() => {
+    resetMeidochoRuntimeTemplate()
+  })
+
+  test("#given 模板无效且消息 agent 是 displayName #when handler #then 抛出错误单拦截", async () => {
+    configureInvalidTemplate()
+    const handler = createChatMessageHandler(createMockHandlerArgs())
+
+    await expect(handler(createMockInput("Meidocho - 女仆长♥️"), meidochoOutput())).rejects.toThrow(
+      /模板文件不可读，本条消息已被拦截/,
+    )
+  })
+
+  test("#given 模板无效且消息 agent 是小写 key #when handler #then 同样拦截", async () => {
+    configureInvalidTemplate()
+    const handler = createChatMessageHandler(createMockHandlerArgs())
+
+    await expect(handler(createMockInput("meidocho"), meidochoOutput())).rejects.toThrow(
+      /本条消息已被拦截/,
+    )
+  })
+
+  test("#given 模板无效但消息属于其他 agent #when handler #then 不拦截", async () => {
+    configureInvalidTemplate()
+    const handler = createChatMessageHandler(createMockHandlerArgs())
+
+    await handler(createMockInput("build"), meidochoOutput())
+  })
+
+  test("#given 未配置模板 #when handler #then meidocho 消息正常放行", async () => {
+    resetMeidochoRuntimeTemplate()
+    const handler = createChatMessageHandler(createMockHandlerArgs())
+
+    await handler(createMockInput("Meidocho - 女仆长♥️"), meidochoOutput())
   })
 })

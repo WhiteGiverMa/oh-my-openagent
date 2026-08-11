@@ -78,4 +78,30 @@ describe("AgentOverridesSchema", () => {
       expect(result.data.oracle?.prompt_append_always).toEqual(["third", "fourth"])
     }
   })
+
+  test("#given meidocho prompt_template #when 解析 #then 保留该字段", () => {
+    const result = AgentOverridesSchema.safeParse({
+      meidocho: { prompt_template: "file:///home/celestia/.omo/prompts/meidocho.md" },
+    })
+
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data.meidocho?.prompt_template).toBe(
+        "file:///home/celestia/.omo/prompts/meidocho.md",
+      )
+    }
+  })
+
+  test("#given 其他 agent 写 prompt_template #when 解析 #then 被剥除不生效", () => {
+    const result = AgentOverridesSchema.safeParse({
+      sisyphus: { prompt_template: "file:///tmp/x.md" },
+      hephaestus: { prompt_template: "file:///tmp/x.md" },
+    })
+
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect("prompt_template" in (result.data.sisyphus ?? {})).toBe(false)
+      expect("prompt_template" in (result.data.hephaestus ?? {})).toBe(false)
+    }
+  })
 })

@@ -16,6 +16,8 @@ export const OmoAgentModelEntrySchema = z.union([z.string(), OmoFallbackModelObj
 const OmoAgentDefInputSchema = z.object({
   description: z.string().optional(),
   prompt: z.string().optional(),
+  /** file:// private prompt template (consumed only by agents with a template renderer; currently meidocho on the opencode harness). */
+  prompt_template: z.string().optional(),
   model: z.string().optional(),
   models: z.array(OmoAgentModelEntrySchema).optional(),
   reasoning: OmoReasoningSchema.optional(),
