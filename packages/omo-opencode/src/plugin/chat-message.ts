@@ -111,9 +111,10 @@ export function createChatMessageHandler(args: {
     // persisted or sent to the model) when the user template is missing/invalid.
     // Agent names arrive as display names ("Meidocho - 女仆长♥️"); normalize via
     // getAgentConfigKey (runtime-prompt-append-reconciler precedent). No-op when
-    // prompt_template is not configured.
+    // prompt_template is not configured. State is per-directory: OpenCode serve
+    // hosts one plugin instance per project directory in the same process.
     if (resolvedAgent && getAgentConfigKey(resolvedAgent) === "meidocho") {
-      assertMeidochoPromptTemplateUsable()
+      assertMeidochoPromptTemplateUsable(ctx.directory)
     }
 
     const slashCommand = detectSlashCommand(extractPromptText(output.parts))

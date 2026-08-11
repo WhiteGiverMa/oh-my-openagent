@@ -88,6 +88,7 @@ export function createPluginInterface(args: {
         reconcileRuntimePromptAppend: args.reconcileRuntimePromptAppend,
         isCompactionRequest: args.isCompactionRequest,
       },
+      ctx.directory,
     ),
 
     config: managers.configHandler,
