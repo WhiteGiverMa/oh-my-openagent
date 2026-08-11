@@ -12,6 +12,7 @@ export type {
   VariantTable,
 } from "./types"
 export { atlasPromptVariants } from "./atlas-prompts"
+export { meidochoPromptVariants } from "./meidocho-prompts"
 export { prometheusPromptVariants } from "./prometheus-prompts"
 export {
   CODEX_ULTRAWORK_PROMPT,
