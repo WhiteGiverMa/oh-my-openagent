@@ -1,0 +1,24 @@
+# Deploy Receipt: meidocho prompt_template（重启以外步骤）
+
+Date: 2026-08-11 | Branch: fix/hybrid-v4.19.1-without-pr-6160 | HEAD: merge 4e66583ea
+
+## 步骤与结果
+
+| 步骤 | 结果 |
+|---|---|
+| 备份双端旧产物 | `oh-my-openagent-build-backups/20260811-pre-meidocho-prompt-template/{wsl,windows}/dist`（各 29M）；备份前双端 SHA-256 一致 `e4d1d06f…`（pre-deploy-sha256.txt） |
+| WSL 主 checkout `bun run build` | 通过（all steps completed）；新 dist/index.js SHA-256 `ba1f9bc3…` |
+| 新产物内容断言 | bundle 含「女仆长」7 处、`prompt_template` 39 处；WSL Node 导入 `default`(object) + `omoPlugin`(function) 正常 |
+| 双端同步（cp） | `dist/index.js` + `dist/skills/*` → `/mnt/g/dev/oh-my-openagent/dist/`；同步后双端 SHA-256 一致 `ba1f9bc3…` |
+| Windows 路径导入（WSL Node） | `/mnt/g/.../dist/index.js` 导入正常（Windows native Node 验证待主人开机时复核） |
+| 重启服务 / Desktop | **未执行**（按约定留给主人；运行中的 :4097 服务仍是旧代码，重启后加载新 dist） |
+
+## 回退语义（主人提问的回答，已验证代码与测试）
+
+- 未配置 `prompt_template`：runtime 状态 disabled，guard/replacer 不激活，行为与改动前一致（QA 场景 D）。
+- 配置但文件不存在/不可读：agent 以 bundled 默认模板注册运行（兜底不消失），但每条发往女仆长的消息被拦截并报「模板文件不可读」错误单（fail-fast 契约）；文件修复后下条消息自动恢复。单元测试：`runtime-template.test.ts`「模板读取失败」与「改坏又修复」用例；QA 场景 B/C 实机验证。
+
+## 注意
+
+- 旧版 OMO（当前运行中的服务）不认识 `prompt_template`，此时写入该配置会把整个 `.omo/omo.jsonc` 回退全默认——**请在新 dist 生效（重启服务/Desktop）后再写入配置**。
+- 推荐配置路径：`~/.omo/prompts/meidocho.md`（在 file:// 边界白名单内）。
