@@ -2,7 +2,8 @@
 
 import { describe, expect, test } from "bun:test";
 import type { AvailableAgent } from "../dynamic-agent-prompt-builder";
-import { buildMeidochoPrompt } from "./prompt";
+import { buildMeidochoPrompt, defaultMeidochoTemplate } from "./prompt";
+import { validateMeidochoTemplate } from "./template";
 
 const AVAILABLE_AGENTS: AvailableAgent[] = [
 	{
@@ -82,5 +83,34 @@ describe("Meidocho generated prompt", () => {
 		expect(prompt).toContain(
 			"实现，不要仅提议/分析。除非主人明确在提问、头脑风暴或要求计划，否则他们要的是能跑的代码，不是描述。消息意味着行动：\"X 是怎么工作的\"意味着理解 X 以修复或改进它；\"为什么 A 坏了\"意味着诊断并修复 A。通常只有当主人明确说\"只解释\"、\"别改任何东西\"时才视为纯回答；实在无法确认是解释还是行动：一个「OK-to-go」的邀请——「说一声OK我就开干哦~」",
 		);
+	});
+
+	test("bundled default template passes the four validation rules", () => {
+		// when: the git-tracked default template is validated
+		const result = validateMeidochoTemplate(defaultMeidochoTemplate());
+
+		// then: all six required slots appear exactly once
+		expect(result.ok).toBe(true);
+	});
+
+	test("renders a user-provided template with slot markers in custom positions", () => {
+		// given: a private template that moves two slots to the top
+		const custom = [
+			"{{ delegationTable }}",
+			"自定义开头",
+			"{{ taskSystemGuide }}",
+			"{{ categorySkillsGuide }}",
+			"{{ oracleSection:omit }}",
+			"{{ frontendGuidance }}",
+			"{{ fileEditGuidance }}",
+		].join("\n");
+
+		// when: rendered through the pipeline
+		const prompt = buildMeidochoPrompt(AVAILABLE_AGENTS, [], [], [], false, undefined, custom);
+
+		// then: the delegation table leads, the omitted section is gone
+		expect(prompt.startsWith("### Delegation Table:")).toBe(true);
+		expect(prompt).toContain("自定义开头");
+		expect(prompt).not.toContain("Oracle - Read-Only High-IQ Consultant");
 	});
 });
