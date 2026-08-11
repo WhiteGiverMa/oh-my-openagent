@@ -1,7 +1,9 @@
 import type { DefaultModeConfig } from "../config/schema/default-mode"
 import { reconcileSisyphusRuntimePrompt } from "../agents/sisyphus-runtime-prompt-reconciler"
+import { reconcileMeidochoPromptTemplate } from "../agents/meidocho/runtime-template"
 import type { RuntimePromptAppendRegistry } from "../agents/runtime-prompt-append-reconciler"
 import { getSessionAgent } from "../features/claude-code-session-state"
+import { getAgentConfigKey } from "../shared/agent-display-names"
 
 const ULTRAWORK_MODE_TAG = "<ultrawork-mode>"
 
@@ -38,6 +40,15 @@ export function createSystemTransformHandler(
         agentName: input.sessionID ? resolveSessionAgent(input.sessionID) : undefined,
         runtimeModel,
       })
+    }
+
+    // Meidocho prompt_template hot-reload: the chat.message gate refreshed the
+    // rendered body on mtime change; swap the freshly rendered body into the
+    // baked system prompt here (sisyphus reconciler pattern). Inert unless the
+    // session agent is meidocho AND prompt_template is configured.
+    const meidochoSessionAgent = input.sessionID ? resolveSessionAgent(input.sessionID) : undefined
+    if (meidochoSessionAgent && getAgentConfigKey(meidochoSessionAgent) === "meidocho") {
+      reconcileMeidochoPromptTemplate(output.system)
     }
 
     if (!defaultMode?.ultrawork || !getUltraworkMessage) return

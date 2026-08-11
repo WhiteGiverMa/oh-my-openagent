@@ -60,17 +60,23 @@ export function createMeidochoAgent(
   availableSkills?: AvailableSkill[],
   availableCategories?: AvailableCategory[],
   useTaskSystem = false,
+  promptOverride?: string,
 ): AgentConfig {
   const tools = availableToolNames ? categorizeTools(availableToolNames) : [];
 
-  const prompt = buildDynamicMeidochoPrompt({
-    model,
-    availableAgents,
-    availableTools: tools,
-    availableSkills,
-    availableCategories,
-    useTaskSystem,
-  });
+  const prompt = promptOverride !== undefined
+    ? `${buildAgentIdentitySection(
+        "Meidocho",
+        "用户的女仆长——像老工程师一样慵懒成熟，像 CTO 一样负责到底，带着爱意 (OhMyOpenCode)",
+      )}\n${promptOverride}`
+    : buildDynamicMeidochoPrompt({
+        model,
+        availableAgents,
+        availableTools: tools,
+        availableSkills,
+        availableCategories,
+        useTaskSystem,
+      });
 
   return {
     description:
