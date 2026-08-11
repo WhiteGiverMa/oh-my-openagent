@@ -169,6 +169,8 @@ export type AgentOverrideConfig = Partial<AgentConfig> & {
   prompt_append_include_model_keywords?: string[];
   prompt_append_exclude_model_keywords?: string[];
   prompt_append_always?: string | string[];
+  /** Meidocho-only (zod schema strips it from every other agent): file:// private prompt template. */
+  prompt_template?: string;
   skills?: string[];
   tools?: Record<string, boolean>;
   variant?: string;

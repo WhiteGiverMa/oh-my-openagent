@@ -113,4 +113,18 @@ describe("agent model entries", () => {
     // then
     expect(result.success).toBe(false)
   })
+
+  test("#given prompt_template file URI #when parsed #then accepted and preserved", () => {
+    // given
+    const definition = { prompt_template: "file:///home/celestia/.omo/prompts/meidocho.md" }
+
+    // when
+    const result = OmoAgentDefSchema.safeParse(definition)
+
+    // then
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data.prompt_template).toBe("file:///home/celestia/.omo/prompts/meidocho.md")
+    }
+  })
 })
