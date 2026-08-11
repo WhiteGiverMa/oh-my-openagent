@@ -5744,6 +5744,7 @@ var OmoAgentModelEntrySchema = union([string2(), OmoFallbackModelObjectSchema]);
 var OmoAgentDefInputSchema = object({
   description: string2().optional(),
   prompt: string2().optional(),
+  prompt_template: string2().optional(),
   model: string2().optional(),
   models: array(OmoAgentModelEntrySchema).optional(),
   reasoning: OmoReasoningSchema.optional(),
