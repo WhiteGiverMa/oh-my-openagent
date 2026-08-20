@@ -3,7 +3,11 @@ import type { OhMyOpenCodeConfig } from "../config"
 import { assertMeidochoPromptTemplateUsable } from "../agents/meidocho/runtime-template"
 import { updateSessionAgent } from "../features/claude-code-session-state"
 import { detectSlashCommand, extractPromptText } from "../hooks/auto-slash-command/detector"
-import { isSyntheticOrInternalOnlyTextParts, log } from "../shared"
+import {
+  isRuntimeFallbackRetryTextParts,
+  isSyntheticOrInternalOnlyTextParts,
+  log,
+} from "../shared"
 import { getAgentConfigKey } from "../shared/agent-display-names"
 import { isCompactionAgent } from "../shared/compaction-marker"
 import { applyUltraworkModelOverrideOnMessage } from "./ultrawork-model-override"
@@ -94,6 +98,9 @@ export function createChatMessageHandler(args: {
   ): Promise<void> => {
     const nativeGoalCommand = consumeNativeGoalCommandMarker(output.parts)
     if (isSyntheticOrInternalOnlyTextParts(output.parts)) {
+      if (isRuntimeFallbackRetryTextParts(output.parts)) {
+        await hooks.runtimeFallback?.["chat.message"]?.(input, output)
+      }
       log("[chat-message] Skipping synthetic/internal-only message", {
         sessionID: input.sessionID,
       })
