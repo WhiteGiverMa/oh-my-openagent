@@ -1,0 +1,14 @@
+NOTE plugin dist: /home/celestia/dev/projects/oh-my-openagent/dist/index.js
+NOTE dist sha256: 0e6a87a1cc106b633327dbfc0c3d8c4a53f57ab5fa61e85dd1a7381d31157e25
+NOTE host session count before: 327
+NOTE capture server on :45261
+NOTE fake model: gpt-6-astra npm: @ai-sdk/openai-compatible
+PASS sandbox serve healthy
+NOTE SSE probe delivered nothing within budget (known since OpenCode 1.18.5; not a regression of this change)
+PASS meidocho registered with variant=max (build-time reasoning lowering)
+NOTE session: ses_f5b9efc2dffeSOU5BJslaOacF1
+PASS wire request carries reasoning effort max
+PASS fake provider reply rendered in session (sandbox DB)
+NOTE host session count after: 327
+PASS host DB unchanged (327)
+ALL QA PASSED

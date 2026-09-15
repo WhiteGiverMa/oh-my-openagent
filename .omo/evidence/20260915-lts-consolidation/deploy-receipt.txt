@@ -1,0 +1,7 @@
+LTS consolidation deploy receipt — 2026-09-15 17:34:02 CST
+branch: fix/hybrid-v4.19.1-without-pr-6160
+head: cba9ee9120a6ed880f57f6200a862431a1545ef1
+pre-deploy dual-end dist sha256: 81ce72c60cbaacf592ecbf688033584033269e926b888cc1ba7ade833f8d86ef (backed up here; wsl slot recovered from the windows copy after the in-place build overwrote wsl dist first)
+post-deploy dual-end dist sha256: 0e6a87a1cc106b633327dbfc0c3d8c4a53f57ab5fa61e85dd1a7381d31157e25
+node import: wsl ok, windows via /mnt/g ok
+restart: pending 主人 (WSL systemd opencode-serve + full Windows Desktop sidecar exit)
