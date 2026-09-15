@@ -16,7 +16,7 @@ export async function executeLspPrepareRename(
 	try {
 			const result = await withLspClient(
 				filePath,
-				async (client) => client.prepareRename(filePath, line, character, signal),
+				async (client, _root, resolvedPath) => client.prepareRename(resolvedPath, line, character, signal),
 				"prepareRename",
 				clientOptions(signal),
 			);
@@ -46,7 +46,7 @@ export async function executeLspRename(
 	try {
 		const result = await withLspClient(
 			filePath,
-			async (client) => client.rename(filePath, line, character, newName, signal),
+			async (client, _root, resolvedPath) => client.rename(resolvedPath, line, character, newName, signal),
 			"rename",
 			clientOptions(signal),
 		);

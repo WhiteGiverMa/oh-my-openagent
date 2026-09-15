@@ -62,7 +62,7 @@ export async function executeLspDiagnostics(
 
 		const result = await withLspClient(
 				filePath,
-				async (client) => client.diagnostics(filePath, signal),
+				async (client, _root, resolvedPath) => client.diagnostics(resolvedPath, signal),
 				"diagnostics",
 				clientOptions(signal),
 			);

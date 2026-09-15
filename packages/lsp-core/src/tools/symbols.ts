@@ -47,7 +47,7 @@ export async function executeLspSymbols(
 
 			const symbols = await withLspClient(
 				filePath,
-				async (client) => client.documentSymbols(filePath, signal),
+				async (client, _root, resolvedPath) => client.documentSymbols(resolvedPath, signal),
 				"documentSymbols",
 				clientOptions(signal),
 			);

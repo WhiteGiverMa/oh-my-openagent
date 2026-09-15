@@ -1,5 +1,5 @@
 import { existsSync, statSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { dirname, isAbsolute, join, resolve } from "node:path";
 import {
 	canonicalizeExistingOrNearestAncestor,
 	contextCwd,
@@ -33,14 +33,19 @@ export function isDirectoryPath(filePath: string): boolean {
 export function findWorkspaceRoot(filePath: string): string {
 	const abs = resolvePathInsideContext(filePath);
 	const contextRoot = contextCwd();
+	// Absolute paths may legitimately live outside the request cwd (multi-project
+	// agents whose MCP server was started elsewhere). Let marker lookup climb all
+	// the way to the filesystem root for those; relative paths stay confined.
+	const confinedToContext = isPathInside(contextRoot, abs);
+	const inputIsDirectory = isDirectoryPath(abs);
 	let dir = abs;
 
-	if (!isDirectoryPath(dir)) {
+	if (!inputIsDirectory) {
 		dir = dirname(dir);
 	}
 
 	let prevDir = "";
-	while (dir !== prevDir && isPathInside(contextRoot, dir)) {
+	while (dir !== prevDir && (!confinedToContext || isPathInside(contextRoot, dir))) {
 		for (const marker of WORKSPACE_MARKERS) {
 			if (existsSync(join(dir, marker))) {
 				return dir;
@@ -50,14 +55,16 @@ export function findWorkspaceRoot(filePath: string): string {
 		dir = dirname(dir);
 	}
 
-	return dirname(abs);
+	return inputIsDirectory ? abs : dirname(abs);
 }
 
 export function resolvePathInsideContext(filePath: string): string {
 	const cwd = contextCwd();
 	const abs = resolve(cwd, filePath);
 	const canonical = canonicalizeExistingOrNearestAncestor(abs);
-	if (!isPathInside(cwd, canonical)) {
+	// Absolute paths are explicit intent from the caller — allow them anywhere.
+	// Relative paths keep the inside-cwd guard so symlink/`..` escapes stay errors.
+	if (!isPathInside(cwd, canonical) && !isAbsolute(filePath)) {
 		throw new LspInvalidPathError(`LSP file path must be inside request cwd: ${filePath}`);
 	}
 	return canonical;
@@ -155,7 +162,7 @@ const READ_ONLY_RETRY_TOOLS = new Set([
 
 export async function withLspClient<T>(
 	filePath: string,
-	fn: (client: LspClient, workspaceRoot: string) => Promise<T>,
+	fn: (client: LspClient, workspaceRoot: string, resolvedPath: string) => Promise<T>,
 	toolName: string,
 	options: WithLspClientOptions = {},
 ): Promise<T> {
@@ -182,7 +189,7 @@ export async function withLspClient<T>(
 		const client = await manager.getClient(root, server, options.signal);
 
 		try {
-			return await fn(client, root);
+			return await fn(client, root, absPath);
 		} catch (err) {
 			if (allowRetry && READ_ONLY_RETRY_TOOLS.has(toolName) && isLspDeadConnectionError(err)) {
 				manager.invalidateClient(root, server.id, client);

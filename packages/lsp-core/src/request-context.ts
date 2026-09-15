@@ -1,7 +1,7 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 import { existsSync, realpathSync, statSync } from "node:fs";
 import { homedir } from "node:os";
-import { basename, delimiter, dirname, isAbsolute, join, relative, resolve } from "node:path";
+import { basename, delimiter, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 
 export interface LspRequestContext {
 	readonly cwd: string;
@@ -206,7 +206,7 @@ function requireAbsolutePath(path: string, field: string): void {
 export function isPathInside(parent: string, child: string): boolean {
 	const childPath = resolve(child);
 	const relativePath = relative(parent, childPath);
-	return relativePath === "" || (!relativePath.startsWith("..") && !isAbsolute(relativePath));
+	return relativePath === "" || (relativePath !== ".." && !relativePath.startsWith(`..${sep}`) && !isAbsolute(relativePath));
 }
 
 function isMissingPathError(error: unknown): boolean {
